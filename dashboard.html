@@ -1,0 +1,2915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ProfMatch — AI Professor Outreach for Grad Applicants</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleSignIn()"></script>
+<script src="/config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  :root {
+    --bg: #fafafa; --surface: #ffffff; --border: #e5e7eb; --border-strong: #d1d5db;
+    --text: #0f172a; --text-muted: #64748b; --text-soft: #94a3b8;
+    --accent: #4f46e5; --accent-soft: #eef2ff;
+    --success: #10b981; --success-soft: #ecfdf5;
+    --warning: #f59e0b; --warning-soft: #fffbeb;
+    --danger: #ef4444; --danger-soft: #fef2f2;
+    --europass-blue: #0e4194; --europass-light: #d6e2f3;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,0.04);
+    --radius: 10px; --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  button { font-family: inherit; cursor: pointer; }
+  input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 32px 24px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .brand-mark { width: 32px; height: 32px; border-radius: 8px; overflow: hidden; display: grid; place-items: center; }
+  .brand-mark img { width: 100%; height: 100%; object-fit: cover; }
+  .brand-name { font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+  .brand-sub { color: var(--text-muted); font-size: 12px; margin-bottom: 28px; }
+  .steps { list-style: none; margin: 0; padding: 0; position: relative; }
+  .steps::before { content: ""; position: absolute; left: 15px; top: 16px; bottom: 16px; width: 1px; background: var(--border); }
+  .step { position: relative; padding: 12px 12px 12px 44px; border-radius: var(--radius); cursor: pointer; margin-bottom: 4px; transition: background 0.15s; }
+  .step:hover { background: #f5f5f7; }
+  .step.active { background: var(--accent-soft); }
+  .step.active .step-title { color: var(--accent); font-weight: 600; }
+  .step-marker { position: absolute; left: 5px; top: 14px; width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 1.5px solid var(--border-strong); color: var(--text-muted); font-size: 11px; font-weight: 600; display: grid; place-items: center; z-index: 1; }
+  .step.active .step-marker { background: var(--accent); border-color: var(--accent); color: white; }
+  .step.done .step-marker { background: var(--success); border-color: var(--success); color: white; }
+  .step.done .step-marker::after { content: "\2713"; }
+  .step.done .step-marker .num { display: none; }
+  .step-label { font-size: 11px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.06em; }
+  .step-title { font-size: 14px; color: var(--text); margin-top: 2px; }
+  .step-status { margin-top: 4px; display: inline-block; font-size: 11px; color: var(--text-muted); }
+  .step.done .step-status { color: var(--success); }
+  .main { padding: 40px 56px 80px; max-width: 980px; }
+  .page-header { margin-bottom: 32px; }
+  .page-eyebrow { text-transform: uppercase; font-size: 11px; letter-spacing: 0.08em; color: var(--accent); font-weight: 600; }
+  .page-title { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; margin: 4px 0 6px; }
+  .page-sub { color: var(--text-muted); font-size: 15px; margin: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+  .card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .card .card-sub { color: var(--text-muted); font-size: 13px; margin: 0 0 20px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .row, .row-3 { grid-template-columns: 1fr; } .app { grid-template-columns: 1fr; } .sidebar { position: static; height: auto; } .main { padding: 24px; } }
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .field label { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+  .field .req { color: var(--danger); }
+  .field input, .field select, .field textarea { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--surface); transition: border 0.15s, box-shadow 0.15s; }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+  .field textarea { min-height: 80px; resize: vertical; }
+  .field .hint { font-size: 11px; color: var(--text-soft); }
+  .upload { border: 1.5px dashed var(--border-strong); border-radius: var(--radius); padding: 24px; text-align: center; color: var(--text-muted); cursor: pointer; transition: border 0.15s, background 0.15s; }
+  .upload:hover { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .upload.has-file { border-style: solid; border-color: var(--success); background: var(--success-soft); color: var(--success); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid transparent; border-radius: 8px; padding: 10px 16px; font-weight: 500; font-size: 14px; transition: all 0.15s; }
+  .btn-primary { background: var(--text); color: white; }
+  .btn-primary:hover { background: #1e293b; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: var(--surface); color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { background: #f5f5f7; }
+  .btn-ghost { background: transparent; color: var(--text-muted); }
+  .btn-ghost:hover { color: var(--text); }
+  .btn-success { background: var(--success); color: white; }
+  .btn-success:hover { background: #059669; }
+  .btn-danger { background: var(--surface); color: var(--danger); border-color: var(--border); }
+  .btn-danger:hover { background: var(--danger-soft); }
+  .btn-europass { background: var(--europass-blue); color: white; }
+  .btn-europass:hover { background: #0a3270; }
+  .actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 24px; }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip { padding: 6px 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); font-size: 12px; color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+  .chip.active { background: var(--text); color: white; border-color: var(--text); }
+  .chip:hover:not(.active) { border-color: var(--border-strong); color: var(--text); }
+  .prof-list { display: flex; flex-direction: column; gap: 10px; }
+  .prof { display: grid; grid-template-columns: 48px 1fr auto; gap: 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); transition: all 0.15s; }
+  .prof:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+  .prof.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #c7d2fe, #a5b4fc); display: grid; place-items: center; font-weight: 600; color: var(--accent); font-size: 14px; }
+  .prof-meta { min-width: 0; }
+  .prof-name { font-weight: 600; font-size: 14px; }
+  .prof-aff { color: var(--text-muted); font-size: 12px; }
+  .prof-tags { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: var(--text-muted); }
+  .score-pill { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; min-width: 56px; text-align: center; }
+  .score-high { background: var(--success-soft); color: var(--success); }
+  .score-mid { background: var(--warning-soft); color: var(--warning); }
+  .score-low { background: #f1f5f9; color: var(--text-muted); }
+  .score-bar { height: 4px; background: #f1f5f9; border-radius: 999px; overflow: hidden; margin-top: 8px; }
+  .score-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #8b5cf6); transition: width 0.6s ease; }
+  .explanation { padding: 16px; background: var(--accent-soft); border-radius: var(--radius); color: var(--text); font-size: 13px; line-height: 1.6; margin-top: 12px; border-left: 3px solid var(--accent); }
+  .explanation strong { color: var(--accent); }
+  .approval-card { padding: 18px; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; background: var(--surface); }
+  .approval-card.approved { border-color: var(--success); background: var(--success-soft); }
+  .approval-card.rejected { border-color: var(--border); background: #f8fafc; opacity: 0.7; }
+  .approval-actions { display: flex; gap: 6px; margin-top: 12px; }
+  .email-preview { background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .email-row { display: grid; grid-template-columns: 80px 1fr; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .email-row:last-of-type { border-bottom: none; margin-bottom: 12px; }
+  .email-row .label { color: var(--text-muted); }
+  .email-body { font-size: 13px; line-height: 1.7; white-space: pre-wrap; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 8px; }
+  .attachment-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: var(--europass-light); color: var(--europass-blue); border-radius: 6px; font-size: 12px; font-weight: 500; }
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  @media (max-width: 720px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value { font-size: 24px; font-weight: 600; margin-top: 4px; letter-spacing: -0.01em; }
+  .stat-delta { font-size: 11px; color: var(--success); margin-top: 4px; }
+  .badge { font-size: 11px; padding: 3px 9px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
+  .badge-sent { background: #eef2ff; color: var(--accent); }
+  .badge-replied { background: var(--success-soft); color: var(--success); }
+  .badge-meeting { background: #ecfeff; color: #0891b2; }
+  .badge-dropped { background: var(--danger-soft); color: var(--danger); }
+  .badge-followup { background: #fdf4ff; color: #a855f7; }
+  .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .search { flex: 1; min-width: 200px; position: relative; }
+  .search input { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px 9px 34px; background: var(--surface); }
+  .search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+  .search::before { content: "\2315"; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-soft); font-size: 16px; pointer-events: none; }
+  .prof-timeline { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 12px; background: var(--surface); cursor: pointer; }
+  .prof-timeline:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+  .prof-timeline-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .prof-timeline-meta { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .prof-timeline-cta { font-size: 11px; color: var(--accent); margin-left: 8px; }
+  .timeline-track { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; margin-top: 4px; }
+  .timeline-track::before { content: ""; position: absolute; left: 12px; right: 12px; top: 9px; height: 2px; background: var(--border); z-index: 0; }
+  .timeline-step { position: relative; z-index: 1; text-align: center; }
+  .timeline-dot { width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 2px solid var(--border); margin: 0 auto; display: grid; place-items: center; font-size: 10px; color: var(--text-soft); }
+  .timeline-step.done .timeline-dot { background: var(--success); border-color: var(--success); color: white; }
+  .timeline-step.done .timeline-dot::after { content: "\2713"; }
+  .timeline-step.current .timeline-dot { background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 0 4px rgba(79,70,229,0.15); }
+  .timeline-step.dropped .timeline-dot { background: var(--danger); border-color: var(--danger); color: white; }
+  .timeline-step.dropped .timeline-dot::after { content: "\00d7"; }
+  .timeline-label { margin-top: 6px; font-size: 11px; color: var(--text-muted); line-height: 1.3; }
+  .timeline-step.done .timeline-label, .timeline-step.current .timeline-label { color: var(--text); font-weight: 500; }
+  .timeline-time { font-size: 10px; color: var(--text-soft); margin-top: 2px; }
+  .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; }
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: white; padding: 12px 18px; border-radius: 10px; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.18); opacity: 0; transform: translateY(8px); transition: all 0.25s; pointer-events: none; z-index: 1000; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .progress-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); background: #f1f5f9; padding: 4px 10px; border-radius: 999px; }
+  .progress-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-soft); }
+  .step.done .step-status .dot { background: var(--success); }
+  .nav-buttons { display: flex; justify-content: space-between; margin-top: 32px; }
+  .step-content { display: none; }
+  .step-content.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .drawer-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.32); opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 90; }
+  .drawer-overlay.show { opacity: 1; pointer-events: auto; }
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); background: var(--surface); box-shadow: -8px 0 32px rgba(15,23,42,0.12); transform: translateX(100%); transition: transform 0.25s cubic-bezier(.2,.7,.2,1); z-index: 95; display: flex; flex-direction: column; }
+  .drawer.show { transform: translateX(0); }
+  .drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .drawer-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+  .drawer-section { margin-bottom: 22px; }
+  .drawer-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 0 0 8px; font-weight: 600; }
+  .msg-bubble { padding: 14px 16px; border-radius: 12px; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+  .msg-out { background: #f1f5f9; color: var(--text); margin-bottom: 10px; }
+  .msg-in { background: var(--accent-soft); color: var(--text); border-left: 3px solid var(--accent); }
+  .msg-meta { font-size: 11px; color: var(--text-soft); margin-bottom: 4px; }
+  .ai-card { background: linear-gradient(135deg, #f8fafc, #fff); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .ai-row { display: grid; grid-template-columns: 110px 1fr; gap: 10px; padding: 6px 0; font-size: 13px; }
+  .ai-row .ai-key { color: var(--text-muted); font-size: 12px; }
+  .sentiment-pill { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
+  .sent-pos { background: var(--success-soft); color: var(--success); }
+  .sent-neu { background: var(--warning-soft); color: var(--warning); }
+  .sent-neg { background: var(--danger-soft); color: var(--danger); }
+  .entity-tag { display: inline-block; font-size: 11px; background: #eef2ff; color: var(--accent); padding: 2px 8px; border-radius: 6px; margin: 2px 4px 2px 0; }
+  .action-card { border: 1px solid var(--accent); background: var(--accent-soft); border-radius: var(--radius); padding: 14px; }
+  .action-card .action-title { font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .action-card .action-desc { font-size: 13px; color: var(--text); margin-bottom: 12px; }
+  .reply-draft { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; background: var(--surface); }
+  .reply-draft textarea { width: 100%; border: none; background: transparent; font-size: 13px; line-height: 1.6; min-height: 120px; resize: vertical; }
+  .reply-draft textarea:focus { outline: none; }
+  .auth-wrap { min-height: 100vh; display: grid; place-items: center; background: linear-gradient(180deg, #fafafa 0%, #f1f5f9 100%); padding: 32px 16px; }
+  .auth-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 44px 40px; width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(15,23,42,0.08); text-align: center; }
+  .auth-mark { width: 56px; height: 56px; border-radius: 14px; overflow: hidden; display: grid; place-items: center; margin: 0 auto 20px; }
+  .auth-mark img { width: 100%; height: 100%; object-fit: cover; }
+  .auth-title { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .auth-sub { color: var(--text-muted); font-size: 14px; margin: 0 0 28px; }
+  .gsi-btn { width: 100%; height: 44px; background: white; border: 1px solid #dadce0; border-radius: 8px; color: #3c4043; font-size: 14px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; }
+  .gsi-btn:hover { background: #f8f9fa; }
+  .gsi-icon { width: 18px; height: 18px; }
+  .auth-fineprint { color: var(--text-soft); font-size: 11px; margin-top: 24px; line-height: 1.5; }
+  .picker-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.4); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 200; }
+  .picker-overlay.show { display: flex; }
+  .picker-card { background: white; border-radius: 12px; width: 100%; max-width: 380px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,0.2); }
+  .picker-card.wide { max-width: 760px; max-height: 90vh; display: flex; flex-direction: column; }
+  .picker-head { padding: 24px 24px 16px; border-bottom: 1px solid #e8eaed; }
+  .picker-title { font-size: 22px; color: #202124; margin: 0 0 4px; font-weight: 400; }
+  .picker-sub { color: #5f6368; font-size: 14px; margin: 0; }
+  .user-menu { margin-top: 24px; padding: 12px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .user-pic { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #4285f4, #34a853); color: white; display: grid; place-items: center; font-weight: 500; font-size: 13px; flex-shrink: 0; }
+  .user-pic img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .user-info { min-width: 0; flex: 1; }
+  .user-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-email { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .signout-btn { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; }
+  .signout-btn:hover { background: #f5f5f7; color: var(--text); }
+
+  /* Repeatable entry blocks for Europass form */
+  .entry-block { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; background: #fafbfc; position: relative; }
+  .entry-remove { position: absolute; top: 10px; right: 10px; background: transparent; border: none; color: var(--text-soft); cursor: pointer; font-size: 18px; padding: 2px 8px; border-radius: 6px; }
+  .entry-remove:hover { background: var(--danger-soft); color: var(--danger); }
+  .entry-add-btn { background: transparent; border: 1.5px dashed var(--border-strong); border-radius: var(--radius); padding: 10px 14px; color: var(--text-muted); cursor: pointer; width: 100%; font-size: 13px; font-weight: 500; }
+  .entry-add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  /* Europass CV preview styles (matches official format) */
+  .europass-cv {
+    background: white;
+    color: #000;
+    font-family: "Times New Roman", Georgia, serif;
+    font-size: 11pt;
+    line-height: 1.4;
+    width: 794px; /* A4 width @ 96dpi */
+    min-height: 1123px; /* A4 height */
+    padding: 0;
+    margin: 0 auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  .europass-cv .ep-header {
+    background: var(--europass-blue);
+    color: white;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .europass-cv .ep-header-left { display: flex; align-items: center; gap: 14px; }
+  .europass-cv .ep-flag {
+    width: 36px; height: 24px; background: var(--europass-blue);
+    border: 1px solid #fff;
+    display: grid; place-items: center;
+    font-size: 9pt; font-weight: bold;
+    color: #ffcc00;
+    flex-shrink: 0;
+  }
+  .europass-cv .ep-flag::before { content: "EU"; }
+  .europass-cv .ep-header h1 {
+    margin: 0;
+    font-size: 18pt;
+    font-weight: 400;
+    letter-spacing: 1px;
+  }
+  .europass-cv .ep-header .ep-sub { font-size: 9pt; opacity: 0.9; }
+  .europass-cv .ep-body { padding: 24px 28px; }
+  .europass-cv .ep-row {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 20px;
+    padding: 12px 0;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .europass-cv .ep-row:last-child { border-bottom: none; }
+  .europass-cv .ep-section-title {
+    font-size: 12pt;
+    color: var(--europass-blue);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--europass-blue);
+    padding-bottom: 4px;
+    margin-bottom: 12px;
+  }
+  .europass-cv .ep-label {
+    font-weight: 700;
+    color: var(--europass-blue);
+    font-size: 10pt;
+  }
+  .europass-cv .ep-value { font-size: 11pt; }
+  .europass-cv .ep-value strong { font-weight: 700; }
+  .europass-cv .ep-entry { margin-bottom: 10px; }
+  .europass-cv .ep-entry-dates { font-size: 10pt; color: #666; font-style: italic; }
+  .europass-cv .ep-entry-title { font-weight: 700; }
+  .europass-cv .ep-entry-org { font-style: italic; color: #444; }
+  .europass-cv .ep-entry-desc { font-size: 10pt; margin-top: 4px; }
+  .europass-cv .ep-lang-table {
+    border-collapse: collapse; width: 100%; font-size: 9pt; margin-top: 8px;
+  }
+  .europass-cv .ep-lang-table th, .europass-cv .ep-lang-table td {
+    border: 1px solid #999;
+    padding: 4px 6px;
+    text-align: center;
+  }
+  .europass-cv .ep-lang-table th {
+    background: var(--europass-light);
+    color: var(--europass-blue);
+    font-weight: 700;
+  }
+  .europass-cv .ep-lang-table .ep-lang-name {
+    font-weight: 700;
+    text-align: left;
+    background: #f5f8fc;
+  }
+  @media print {
+    body * { visibility: hidden; }
+    .europass-cv, .europass-cv * { visibility: visible; }
+    .europass-cv { position: absolute; left: 0; top: 0; box-shadow: none; }
+    @page { size: A4; margin: 0; }
+  }
+  .preview-wrap { padding: 24px; background: #f5f5f7; overflow-y: auto; flex: 1; }
+  .preview-actions { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; background: white; }
+
+  /* CV summary card on Step 1 */
+  .cv-summary {
+    background: linear-gradient(135deg, var(--europass-light), #fff);
+    border: 1px solid var(--europass-blue);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .cv-icon {
+    width: 48px; height: 48px;
+    background: var(--europass-blue);
+    color: white;
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .cv-summary-text { flex: 1; }
+  .cv-summary-title { font-weight: 600; color: var(--europass-blue); margin: 0 0 2px; }
+  .cv-summary-sub { font-size: 12px; color: var(--text-muted); }
+  .cv-summary-actions { display: flex; gap: 8px; }
+</style>
+</head>
+<body>
+
+<div class="auth-wrap" id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-mark"><img src="Logo.jpg" alt="ProfMatch" /></div>
+    <h1 class="auth-title">Welcome to ProfMatch</h1>
+    <p class="auth-sub">AI-powered professor outreach for grad school applicants</p>
+    <div id="g-signin-fallback" style="min-height:44px; display:flex; justify-content:center;"></div>
+    <p class="auth-fineprint">Your CV, drafts, and outreach are private to you.</p>
+  </div>
+</div>
+
+
+<div class="app" id="main-app" style="display:none;">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark"><img src="Logo.jpg" alt="ProfMatch logo" /></div><div class="brand-name">ProfMatch</div></div>
+    <p class="brand-sub">AI outreach for grad applicants</p>
+    <ul class="steps" id="steps"></ul>
+    <div class="user-menu" id="user-menu" style="display:none;">
+      <div class="user-pic" id="user-pic">AK</div>
+      <div class="user-info"><div class="user-name" id="user-name">Aisha</div><div class="user-email" id="user-email">a@s.edu</div></div>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+    <button class="signout-btn" onclick="openSettings()" style="margin-top:8px; width:100%;">&#9881; Email settings</button>
+    <button class="signout-btn" onclick="openAISettings()" style="margin-top:6px; width:100%;">&#129302; AI settings</button>
+  </aside>
+  <main class="main">
+    <section class="step-content active" data-step="1">
+      <div class="page-header"><div class="page-eyebrow">Step 1 of 6</div><h1 class="page-title">Build your applicant profile</h1><p class="page-sub">Fill in your details to generate your CV. We'll use this for matching, drafting emails, and as the attachment professors receive.</p></div>
+
+      <div class="card">
+        <h3>Personal information <span class="req">*</span></h3>
+        <p class="card-sub">Required for your CV.</p>
+        <div class="row">
+          <div class="field"><label>Full name <span class="req">*</span></label><input id="f-name" placeholder="Aisha Khan" /></div>
+          <div class="field"><label>Email <span class="req">*</span></label><input id="f-email" type="email" placeholder="aisha@university.edu" /></div>
+        </div>
+        <div class="row-3">
+          <div class="field"><label>Date of birth <span class="req">*</span></label><input id="f-dob" type="date" /></div>
+          <div class="field"><label>Nationality <span class="req">*</span></label><input id="f-nationality" placeholder="Pakistani" /></div>
+          <div class="field"><label>Phone <span class="req">*</span></label><input id="f-phone" placeholder="+92 300 1234567" /></div>
+        </div>
+        <div class="field"><label>Address <span class="req">*</span></label><input id="f-address" placeholder="Street, City, Country" /></div>
+      </div>
+
+      <div class="card">
+        <h3>Career objective</h3>
+        <p class="card-sub">Used to match you with relevant professors and personalize emails.</p>
+        <div class="row">
+          <div class="field"><label>Current institution</label><input id="f-institution" placeholder="Stanford University" /></div>
+          <div class="field"><label>Target degree <span class="req">*</span></label>
+            <select id="f-degree">
+              <!-- PhD Programs -->
+              <option>PhD in Computer Science</option>
+              <option>PhD in Artificial Intelligence</option>
+              <option>PhD in Machine Learning</option>
+              <option>PhD in Data Science</option>
+              <option>PhD in Information Systems</option>
+              <option>PhD in Software Engineering</option>
+              <option>PhD in Cybersecurity</option>
+              <option>PhD in Robotics</option>
+              <option>PhD in Electrical Engineering</option>
+              <option>PhD in Electronics Engineering</option>
+              <option>PhD in Mechanical Engineering</option>
+              <option>PhD in Civil Engineering</option>
+              <option>PhD in Chemical Engineering</option>
+              <option>PhD in Industrial Engineering</option>
+              <option>PhD in Aerospace Engineering</option>
+              <option>PhD in Biomedical Engineering</option>
+              <option>PhD in Bioengineering</option>
+              <option>PhD in Environmental Engineering</option>
+              <option>PhD in Materials Science</option>
+              <option>PhD in Nanotechnology</option>
+              <option>PhD in Physics</option>
+              <option>PhD in Applied Physics</option>
+              <option>PhD in Mathematics</option>
+              <option>PhD in Applied Mathematics</option>
+              <option>PhD in Statistics</option>
+              <option>PhD in Chemistry</option>
+              <option>PhD in Biochemistry</option>
+              <option>PhD in Biology</option>
+              <option>PhD in Molecular Biology</option>
+              <option>PhD in Microbiology</option>
+              <option>PhD in Genetics</option>
+              <option>PhD in Neuroscience</option>
+              <option>PhD in Bioinformatics</option>
+              <option>PhD in Computational Biology</option>
+              <option>PhD in Pharmacology</option>
+              <option>PhD in Public Health</option>
+              <option>PhD in Epidemiology</option>
+              <option>PhD in Nursing</option>
+              <option>PhD in Medicine (MD-PhD)</option>
+              <option>PhD in Psychology</option>
+              <option>PhD in Clinical Psychology</option>
+              <option>PhD in Cognitive Science</option>
+              <option>PhD in Economics</option>
+              <option>PhD in Finance</option>
+              <option>PhD in Business Administration</option>
+              <option>PhD in Management</option>
+              <option>PhD in Marketing</option>
+              <option>PhD in Accounting</option>
+              <option>PhD in Operations Research</option>
+              <option>PhD in Supply Chain Management</option>
+              <option>PhD in Political Science</option>
+              <option>PhD in International Relations</option>
+              <option>PhD in Public Policy</option>
+              <option>PhD in Public Administration</option>
+              <option>PhD in Sociology</option>
+              <option>PhD in Anthropology</option>
+              <option>PhD in History</option>
+              <option>PhD in Philosophy</option>
+              <option>PhD in Linguistics</option>
+              <option>PhD in English Literature</option>
+              <option>PhD in Comparative Literature</option>
+              <option>PhD in Communication Studies</option>
+              <option>PhD in Education</option>
+              <option>PhD in Curriculum &amp; Instruction</option>
+              <option>PhD in Educational Psychology</option>
+              <option>PhD in Law (JSD/SJD)</option>
+              <option>PhD in Architecture</option>
+              <option>PhD in Urban Planning</option>
+              <option>PhD in Environmental Science</option>
+              <option>PhD in Climate Science</option>
+              <option>PhD in Agriculture</option>
+              <option>PhD in Food Science</option>
+              <option>PhD in Veterinary Science</option>
+              <option>PhD in Theology / Religious Studies</option>
+              <option>PhD in Music</option>
+              <option>PhD in Fine Arts</option>
+              <option>PhD in Media Studies</option>
+              <option>PhD in Geography</option>
+              <option>PhD in Geology</option>
+              <option>PhD in Astronomy</option>
+              <!-- Master's Programs -->
+              <option>Master's in Computer Science (MS CS)</option>
+              <option>Master's in Artificial Intelligence</option>
+              <option>Master's in Machine Learning</option>
+              <option>Master's in Data Science</option>
+              <option>Master's in Information Systems</option>
+              <option>Master's in Software Engineering</option>
+              <option>Master's in Cybersecurity</option>
+              <option>Master's in Robotics</option>
+              <option>Master's in Electrical Engineering</option>
+              <option>Master's in Mechanical Engineering</option>
+              <option>Master's in Civil Engineering</option>
+              <option>Master's in Chemical Engineering</option>
+              <option>Master's in Biomedical Engineering</option>
+              <option>Master's in Environmental Engineering</option>
+              <option>Master's in Industrial Engineering</option>
+              <option>Master's in Aerospace Engineering</option>
+              <option>Master's in Materials Science</option>
+              <option>Master's in Physics</option>
+              <option>Master's in Mathematics</option>
+              <option>Master's in Statistics</option>
+              <option>Master's in Chemistry</option>
+              <option>Master's in Biology</option>
+              <option>Master's in Bioinformatics</option>
+              <option>Master's in Public Health (MPH)</option>
+              <option>Master's in Epidemiology</option>
+              <option>Master's in Nursing (MSN)</option>
+              <option>Master's in Psychology</option>
+              <option>Master's in Neuroscience</option>
+              <option>Master's in Cognitive Science</option>
+              <option>MBA (Business Administration)</option>
+              <option>Master's in Finance (MSF)</option>
+              <option>Master's in Economics</option>
+              <option>Master's in Marketing</option>
+              <option>Master's in Accounting</option>
+              <option>Master's in Management</option>
+              <option>Master's in Supply Chain Management</option>
+              <option>Master's in Operations Research</option>
+              <option>Master's in Political Science</option>
+              <option>Master's in International Relations</option>
+              <option>Master's in Public Policy (MPP)</option>
+              <option>Master's in Public Administration (MPA)</option>
+              <option>Master's in Social Work (MSW)</option>
+              <option>Master's in Sociology</option>
+              <option>Master's in Anthropology</option>
+              <option>Master's in History</option>
+              <option>Master's in Philosophy</option>
+              <option>Master's in Linguistics</option>
+              <option>Master's in English Literature</option>
+              <option>Master's in Communication Studies</option>
+              <option>Master's in Education (MEd)</option>
+              <option>Master's in Law (LLM)</option>
+              <option>Master's in Architecture (MArch)</option>
+              <option>Master's in Urban Planning</option>
+              <option>Master's in Environmental Science</option>
+              <option>Master's in Agriculture</option>
+              <option>Master's in Food Science</option>
+              <option>Master's in Fine Arts (MFA)</option>
+              <option>Master's in Music</option>
+              <option>Master's in Media Studies</option>
+              <option>Master's in Geography</option>
+              <option>Master's in Journalism</option>
+              <!-- Professional Doctorates -->
+              <option>Doctor of Medicine (MD)</option>
+              <option>Doctor of Pharmacy (PharmD)</option>
+              <option>Doctor of Education (EdD)</option>
+              <option>Doctor of Business Administration (DBA)</option>
+              <option>Doctor of Engineering (DEng)</option>
+              <option>Doctor of Public Health (DrPH)</option>
+              <option>Juris Doctor (JD)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field"><label>Research interests (comma-separated) <span class="req">*</span></label><input id="f-interests" placeholder="machine learning, NLP, interpretability" /></div>
+        <div class="field"><label>Short bio / personal statement</label><textarea id="f-bio" placeholder="Describe your research background and what excites you."></textarea></div>
+      </div>
+
+      <div class="card">
+        <h3>Education <span class="req">*</span></h3>
+        <p class="card-sub">At least one entry required for a valid CV.</p>
+        <div id="edu-list"></div>
+        <button class="entry-add-btn" onclick="addEduEntry()">+ Add education entry</button>
+      </div>
+
+      <div class="card">
+        <h3>Work experience</h3>
+        <p class="card-sub">Internships, research assistantships, jobs.</p>
+        <div id="exp-list"></div>
+        <button class="entry-add-btn" onclick="addExpEntry()">+ Add work experience</button>
+      </div>
+
+      <div class="card">
+        <h3>Languages <span class="req">*</span></h3>
+        <p class="card-sub">CEFR self-assessment for language proficiency.</p>
+        <div class="field"><label>Mother tongue <span class="req">*</span></label><input id="f-mother-tongue" placeholder="Urdu" /></div>
+        <div id="lang-list"></div>
+        <button class="entry-add-btn" onclick="addLangEntry()">+ Add other language</button>
+      </div>
+
+      <div class="card">
+        <h3>Digital skills</h3>
+        <div class="row">
+          <div class="field"><label>Self-assessed level</label>
+            <select id="f-digital-level">
+              <option>Basic user</option>
+              <option selected>Independent user</option>
+              <option>Proficient user</option>
+            </select>
+          </div>
+          <div class="field"><label>Tools / software</label><input id="f-digital-details" placeholder="Python, PyTorch, LaTeX, Git..." /></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Publications &amp; honours</h3>
+        <p class="card-sub">Free-form. Each item on a new line.</p>
+        <div class="field"><label>Publications</label><textarea id="f-publications" placeholder="Khan A., et al. (2024). Attention circuits in instruction-tuned models. ICML."></textarea></div>
+        <div class="field"><label>Honours / awards</label><textarea id="f-honours" placeholder="Stanford Dean's List 2023; Best Paper Award, ICML 2024 workshop"></textarea></div>
+      </div>
+
+      <div class="cv-summary" id="cv-summary" style="display:none;">
+        <div class="cv-icon">&#128462;</div>
+        <div class="cv-summary-text">
+          <div class="cv-summary-title">Your CV is ready</div>
+          <div class="cv-summary-sub" id="cv-summary-sub">Will be auto-attached to outreach emails.</div>
+        </div>
+        <div class="cv-summary-actions">
+          <button class="btn btn-secondary" onclick="previewEuropassCV()">Preview</button>
+          <button class="btn btn-europass" onclick="downloadEuropassPDF()">Download PDF</button>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-ghost" disabled>&larr; Back</button>
+        <button class="btn btn-primary" onclick="completeStep(1)">Generate CV &amp; continue &rarr;</button>
+      </div>
+    </section>
+
+    <section class="step-content" data-step="2">
+      <div class="page-header"><div class="page-eyebrow">Step 2 of 6</div><h1 class="page-title">Discover relevant professors</h1><p class="page-sub">Configure your search, then find professors via OpenAlex.</p></div>
+
+      <!-- Search Configuration Card -->
+      <div class="card" id="search-config-card">
+        <h3>Search configuration</h3>
+        <p class="card-sub">AI generates search queries from your CV, or add your own. Adjust filters before searching.</p>
+
+        <div class="field">
+          <label>Search queries <span style="font-weight:normal; color:var(--text-soft);">(2-4 words each, enter to add)</span></label>
+          <div id="query-chips" style="display:flex; flex-wrap:wrap; gap:6px; min-height:36px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--bg);"></div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <input type="text" id="query-input" placeholder="Add a query..." style="flex:1; border:1px solid var(--border); border-radius:8px; padding:10px 12px;" onkeydown="if(event.key==='Enter'){addQueryChip(); event.preventDefault()}" />
+            <button class="btn btn-secondary" id="generate-queries-btn" onclick="generateQueries()">Generate from CV</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Target countries <span style="font-weight:normal; color:var(--text-soft);">(leave empty for worldwide)</span></label>
+          <div id="country-chips" style="display:flex; flex-wrap:wrap; gap:6px; min-height:36px; padding:8px; border:1px solid var(--border); border-radius:8px; background:var(--bg);"></div>
+          <select id="country-add" onchange="addCountryChip(this.value); this.value=''" style="border:1px solid var(--border); border-radius:8px; padding:10px 12px; background:var(--surface); margin-top:8px;">
+            <option value="">+ Add country...</option>
+            <option value="US">United States (US)</option>
+            <option value="GB">United Kingdom (GB)</option>
+            <option value="CA">Canada (CA)</option>
+            <option value="DE">Germany (DE)</option>
+            <option value="AU">Australia (AU)</option>
+            <option value="NL">Netherlands (NL)</option>
+            <option value="CH">Switzerland (CH)</option>
+            <option value="SE">Sweden (SE)</option>
+            <option value="SG">Singapore (SG)</option>
+            <option value="FR">France (FR)</option>
+            <option value="JP">Japan (JP)</option>
+            <option value="KR">South Korea (KR)</option>
+            <option value="AT">Austria (AT)</option>
+            <option value="DK">Denmark (DK)</option>
+            <option value="NO">Norway (NO)</option>
+            <option value="FI">Finland (FI)</option>
+            <option value="BE">Belgium (BE)</option>
+            <option value="IT">Italy (IT)</option>
+            <option value="ES">Spain (ES)</option>
+            <option value="IE">Ireland (IE)</option>
+            <option value="HK">Hong Kong (HK)</option>
+            <option value="NZ">New Zealand (NZ)</option>
+            <option value="IL">Israel (IL)</option>
+          </select>
+        </div>
+
+        <div style="display:flex; gap:16px; align-items:center;">
+          <div class="field" style="margin-bottom:0; flex:1; max-width:200px;">
+            <label>Minimum papers</label>
+            <select id="min-papers" style="border:1px solid var(--border); border-radius:8px; padding:10px 12px; background:var(--surface);">
+              <option value="5">5+ papers</option>
+              <option value="20" selected>20+ papers</option>
+              <option value="50">50+ papers</option>
+              <option value="100">100+ papers</option>
+            </select>
+          </div>
+          <div style="margin-top:18px;">
+            <button class="btn btn-primary" id="search-btn" onclick="runDiscoverySearch()">Search OpenAlex &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Card (hidden until search runs) -->
+      <div class="card" id="results-card" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <div style="display:flex; gap:24px;">
+            <div><div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Catalog</div><div style="font-size:18px; font-weight:600;" id="stat-catalog">0 professors</div></div>
+            <div><div style="font-size:11px; color:var(--text-muted); text-transform:uppercase;">Source</div><div style="font-size:18px; font-weight:600;" id="stat-source">OpenAlex</div></div>
+          </div>
+          <button class="btn btn-ghost" onclick="document.getElementById('search-config-card').scrollIntoView({behavior:'smooth'})">Refine search</button>
+        </div>
+        <div class="toolbar">
+          <div class="search"><input type="text" id="discovery-search" placeholder="Search by name, institution, or topic..." oninput="renderDiscovery()" /></div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span id="selection-count" style="font-size:12px; color:var(--text-muted);">0 selected</span>
+            <button class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" onclick="selectAllProfs()">Select all</button>
+            <button class="btn btn-ghost" style="padding:6px 10px; font-size:12px;" onclick="deselectAllProfs()">Clear</button>
+          </div>
+        </div>
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom: 12px;">Tap any professor card to add or remove from your shortlist. Only selected professors continue to Step 3.</div>
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
+          <label style="font-size:12px; color:var(--text-muted); white-space:nowrap;">Country:</label>
+          <select id="country-filter" onchange="setCountryFilter(this.value)" style="border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12px; background:var(--surface); color:var(--text); min-width:140px;">
+            <option value="">All countries</option>
+          </select>
+        </div>
+        <div class="filter-bar" id="discovery-filters"></div>
+        <div class="prof-list" id="prof-list-discovery"></div>
+      </div>
+
+      <div class="nav-buttons"><button class="btn btn-ghost" onclick="goToStep(1)">&larr; Back</button><button class="btn btn-primary" id="step2-next-btn" onclick="completeStep(2)">Run scoring &rarr;</button></div>
+    </section>
+
+    <section class="step-content" data-step="3">
+      <div class="page-header"><div class="page-eyebrow">Step 3 of 6</div><h1 class="page-title">Scoring &amp; explanation</h1></div>
+      <div id="scoring-explanation-list"></div>
+      <div class="nav-buttons"><button class="btn btn-ghost" onclick="goToStep(2)">&larr; Back</button><button class="btn btn-primary" onclick="completeStep(3)">Send to approval &rarr;</button></div>
+    </section>
+
+    <section class="step-content" data-step="4">
+      <div class="page-header"><div class="page-eyebrow">Step 4 of 6</div><h1 class="page-title">Approve your shortlist</h1></div>
+      <div id="approval-list"></div>
+      <div class="nav-buttons"><button class="btn btn-ghost" onclick="goToStep(3)">&larr; Back</button><button class="btn btn-primary" id="approval-next" onclick="completeStep(4)">Draft emails &rarr;</button></div>
+    </section>
+
+    <section class="step-content" data-step="5">
+      <div class="page-header"><div class="page-eyebrow">Step 5 of 6</div><h1 class="page-title">Personalized outreach</h1><p class="page-sub">Each email includes your CV as an attachment.</p></div>
+      <div id="gmail-status" style="margin-bottom:16px;"></div>
+      <div id="email-list"></div>
+      <div class="nav-buttons"><button class="btn btn-ghost" onclick="goToStep(4)">&larr; Back</button><button class="btn btn-primary" id="send-all-btn" onclick="sendSelectedEmails()">Send selected &rarr;</button></div>
+    </section>
+
+    <section class="step-content" data-step="6">
+      <div class="page-header"><div class="page-eyebrow">Step 6 of 6</div><h1 class="page-title">Follow-up monitor</h1></div>
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="card">
+        <h3>Activity timeline</h3>
+        <div class="toolbar"><div class="search"><input type="text" id="search-input" placeholder="Search..." oninput="renderFollowUp()" /></div></div>
+        <div class="filter-bar" id="status-filters">
+          <span class="chip active" data-status="all">All</span>
+          <span class="chip" data-status="sent">Sent</span>
+          <span class="chip" data-status="replied">Replied</span>
+          <span class="chip" data-status="meeting">Meeting</span>
+          <span class="chip" data-status="pending">Pending follow-up</span>
+          <span class="chip" data-status="dropped">Dropped</span>
+        </div>
+        <div id="timeline"></div>
+      </div>
+      <div class="nav-buttons"><button class="btn btn-ghost" onclick="goToStep(5)">&larr; Back</button><button class="btn btn-ghost" id="btn-check-inbox" style="display:none;" onclick="manualCheckReplies()">&#128231; Check inbox for replies</button><button class="btn btn-primary" onclick="restart()">New campaign</button></div>
+    </section>
+  </main>
+</div>
+
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div class="avatar" id="drawer-avatar">--</div>
+      <div><div class="prof-name" id="drawer-name">&mdash;</div><div class="prof-aff" id="drawer-aff">&mdash;</div></div>
+    </div>
+    <button class="btn btn-ghost" onclick="closeDrawer()" style="font-size:18px;">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<div class="picker-overlay" id="settings-overlay" onclick="closeSettings(event)">
+  <div class="picker-card" style="max-width: 500px;" onclick="event.stopPropagation()">
+    <div class="picker-head"><h2 class="picker-title" style="font-size:18px;">Email settings</h2><p class="picker-sub">Connect EmailJS.</p></div>
+    <div style="padding: 16px 24px;">
+      <div class="field"><label>EmailJS Public Key</label><input id="cfg-public-key" placeholder="user_..." /></div>
+      <div class="field"><label>Service ID</label><input id="cfg-service-id" placeholder="service_..." /></div>
+      <div class="field"><label>Template ID</label><input id="cfg-template-id" placeholder="template_..." /></div>
+      <div class="field"><label>Test recipient</label><input id="cfg-test-recipient" placeholder="your@email.com" /></div>
+    </div>
+    <div class="actions" style="padding: 16px 24px; border-top: 1px solid var(--border);">
+      <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="picker-overlay" id="ai-settings-overlay" onclick="closeAISettings(event)">
+  <div class="picker-card" style="max-width: 500px;" onclick="event.stopPropagation()">
+    <div class="picker-head"><h2 class="picker-title" style="font-size:18px;">&#129302; AI settings</h2><p class="picker-sub">Pick your AI provider and paste your API key.</p></div>
+    <div style="padding: 16px 24px;">
+      <div class="field">
+        <label>AI Provider</label>
+        <select id="cfg-ai-provider" onchange="updateAIModelOptions()">
+          <option value="gemini">Google Gemini</option>
+          <option value="claude">Anthropic Claude</option>
+        </select>
+      </div>
+      <div class="field">
+        <label id="cfg-key-label">API Key</label>
+        <input id="cfg-gemini-key" placeholder="AIzaSy..." />
+        <span class="hint" id="cfg-key-hint">Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com/app/apikey</a></span>
+      </div>
+      <div class="field">
+        <label>Model</label>
+        <select id="cfg-gemini-model"></select>
+      </div>
+    </div>
+    <div class="actions" style="padding: 16px 24px; border-top: 1px solid var(--border);">
+      <button class="btn btn-ghost" onclick="closeAISettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAISettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="picker-overlay" id="cv-preview-overlay" onclick="closeCVPreview(event)">
+  <div class="picker-card wide" onclick="event.stopPropagation()">
+    <div class="picker-head" style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <h2 class="picker-title" style="font-size:18px;">CV Preview</h2>
+        <p class="picker-sub">Edit any field above to update.</p>
+      </div>
+      <button class="btn btn-ghost" onclick="closeCVPreview()" style="font-size:18px;">&times;</button>
+    </div>
+    <div class="preview-wrap">
+      <div id="cv-render-target"></div>
+    </div>
+    <div class="preview-actions">
+      <button class="btn btn-secondary" onclick="window.print()">Print / Save as PDF</button>
+      <button class="btn btn-europass" onclick="downloadEuropassPDF()">Download PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Saved</div>
+
+<script>
+"use strict";
+
+const STEPS = [
+  { id: 1, label: "Step 1", title: "Profile & CV", status: "Profile Ready" },
+  { id: 2, label: "Step 2", title: "Professor Discovery", status: "Data Collected" },
+  { id: 3, label: "Step 3", title: "Scoring & Explanation", status: "Explained" },
+  { id: 4, label: "Step 4", title: "Human Approval", status: "Approved" },
+  { id: 5, label: "Step 5", title: "Personalized Outreach", status: "Delivered" },
+  { id: 6, label: "Step 6", title: "Follow-Up", status: "Monitored" }
+];
+
+let PROFESSORS = [];
+
+const state = { current: 1, completed: new Set(), selected: new Set(), approved: new Set(), rejected: new Set(), archived: new Set(), sentAt: null };
+
+// ============ Europass profile data ============
+let europass = {
+  fullName: "", email: "", dob: "", nationality: "", phone: "", address: "",
+  institution: "", degree: "", interests: "", bio: "",
+  education: [],   // [{degree, institution, dates, subjects}]
+  experience: [],  // [{position, employer, dates, description}]
+  motherTongue: "",
+  languages: [],   // [{language, listening, reading, spokenInteraction, spokenProduction, writing}]
+  digitalLevel: "Independent user", digitalDetails: "",
+  publications: "", honours: "",
+  generated: false
+};
+
+function europassMandatoryComplete() {
+  return europass.fullName && europass.email && europass.dob && europass.nationality && europass.phone && europass.address &&
+    europass.degree && europass.interests && europass.education.length > 0 && europass.motherTongue;
+}
+
+function readEuropassFromForm() {
+  europass.fullName    = document.getElementById("f-name").value.trim();
+  europass.email       = document.getElementById("f-email").value.trim();
+  europass.dob         = document.getElementById("f-dob").value;
+  europass.nationality = document.getElementById("f-nationality").value.trim();
+  europass.phone       = document.getElementById("f-phone").value.trim();
+  europass.address     = document.getElementById("f-address").value.trim();
+  europass.institution = document.getElementById("f-institution").value.trim();
+  europass.degree      = document.getElementById("f-degree").value;
+  europass.interests   = document.getElementById("f-interests").value.trim();
+  europass.bio         = document.getElementById("f-bio").value.trim();
+  europass.motherTongue= document.getElementById("f-mother-tongue").value.trim();
+  europass.digitalLevel= document.getElementById("f-digital-level").value;
+  europass.digitalDetails = document.getElementById("f-digital-details").value.trim();
+  europass.publications= document.getElementById("f-publications").value.trim();
+  europass.honours     = document.getElementById("f-honours").value.trim();
+
+  // Read repeatable entries
+  europass.education = Array.from(document.querySelectorAll("#edu-list .entry-block")).map(el => ({
+    degree:      el.querySelector(".edu-degree").value.trim(),
+    institution: el.querySelector(".edu-institution").value.trim(),
+    startDate:   el.querySelector(".edu-start").value.trim(),
+    endDate:     el.querySelector(".edu-end").value.trim(),
+    subjects:    el.querySelector(".edu-subjects").value.trim()
+  })).filter(e => e.degree || e.institution);
+
+  europass.experience = Array.from(document.querySelectorAll("#exp-list .entry-block")).map(el => ({
+    position: el.querySelector(".exp-position").value.trim(),
+    employer: el.querySelector(".exp-employer").value.trim(),
+    startDate: el.querySelector(".exp-start").value.trim(),
+    endDate:   el.querySelector(".exp-end").value.trim(),
+    description: el.querySelector(".exp-description").value.trim()
+  })).filter(e => e.position || e.employer);
+
+  europass.languages = Array.from(document.querySelectorAll("#lang-list .entry-block")).map(el => ({
+    language: el.querySelector(".lang-name").value.trim(),
+    listening: el.querySelector(".lang-listening").value,
+    reading: el.querySelector(".lang-reading").value,
+    spokenInteraction: el.querySelector(".lang-si").value,
+    spokenProduction:  el.querySelector(".lang-sp").value,
+    writing:  el.querySelector(".lang-writing").value
+  })).filter(l => l.language);
+}
+
+function writeEuropassToForm() {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ""; };
+  set("f-name", europass.fullName);
+  set("f-email", europass.email);
+  set("f-dob", europass.dob);
+  set("f-nationality", europass.nationality);
+  set("f-phone", europass.phone);
+  set("f-address", europass.address);
+  set("f-institution", europass.institution);
+  if (europass.degree) set("f-degree", europass.degree);
+  set("f-interests", europass.interests);
+  set("f-bio", europass.bio);
+  set("f-mother-tongue", europass.motherTongue);
+  if (europass.digitalLevel) set("f-digital-level", europass.digitalLevel);
+  set("f-digital-details", europass.digitalDetails);
+  set("f-publications", europass.publications);
+  set("f-honours", europass.honours);
+
+  // Render entries
+  document.getElementById("edu-list").innerHTML = "";
+  if (europass.education.length === 0) addEduEntry();
+  else europass.education.forEach(e => addEduEntry(e));
+
+  document.getElementById("exp-list").innerHTML = "";
+  europass.experience.forEach(e => addExpEntry(e));
+
+  document.getElementById("lang-list").innerHTML = "";
+  europass.languages.forEach(l => addLangEntry(l));
+
+  if (europass.generated) showCVSummary();
+}
+
+const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+function addEduEntry(data) {
+  data = data || {};
+  const list = document.getElementById("edu-list");
+  const div = document.createElement("div");
+  div.className = "entry-block";
+  div.innerHTML =
+    '<button class="entry-remove" onclick="this.parentElement.remove()" title="Remove">&times;</button>' +
+    '<div class="row"><div class="field"><label>Degree / Qualification</label><input class="edu-degree" placeholder="BS in Computer Science" value="' + escapeAttr(data.degree) + '" /></div>' +
+    '<div class="field"><label>Institution</label><input class="edu-institution" placeholder="Stanford University" value="' + escapeAttr(data.institution) + '" /></div></div>' +
+    '<div class="row"><div class="field"><label>Start (year)</label><input class="edu-start" placeholder="2021" value="' + escapeAttr(data.startDate) + '" /></div>' +
+    '<div class="field"><label>End (year or "Present")</label><input class="edu-end" placeholder="2025" value="' + escapeAttr(data.endDate) + '" /></div></div>' +
+    '<div class="field"><label>Key subjects / dissertation</label><input class="edu-subjects" placeholder="Machine learning, systems, theory" value="' + escapeAttr(data.subjects) + '" /></div>';
+  list.appendChild(div);
+}
+
+function addExpEntry(data) {
+  data = data || {};
+  const list = document.getElementById("exp-list");
+  const div = document.createElement("div");
+  div.className = "entry-block";
+  div.innerHTML =
+    '<button class="entry-remove" onclick="this.parentElement.remove()" title="Remove">&times;</button>' +
+    '<div class="row"><div class="field"><label>Position</label><input class="exp-position" placeholder="Research Assistant" value="' + escapeAttr(data.position) + '" /></div>' +
+    '<div class="field"><label>Employer / Organisation</label><input class="exp-employer" placeholder="Stanford NLP Lab" value="' + escapeAttr(data.employer) + '" /></div></div>' +
+    '<div class="row"><div class="field"><label>Start (month/year)</label><input class="exp-start" placeholder="Jun 2023" value="' + escapeAttr(data.startDate) + '" /></div>' +
+    '<div class="field"><label>End (or "Present")</label><input class="exp-end" placeholder="Aug 2024" value="' + escapeAttr(data.endDate) + '" /></div></div>' +
+    '<div class="field"><label>Description</label><textarea class="exp-description" placeholder="Built attention-circuit analysis pipeline for transformer interpretability...">' + escapeText(data.description) + '</textarea></div>';
+  list.appendChild(div);
+}
+
+function addLangEntry(data) {
+  data = data || {};
+  const list = document.getElementById("lang-list");
+  const div = document.createElement("div");
+  div.className = "entry-block";
+  const opt = (sel) => CEFR_LEVELS.map(l => '<option' + (l === sel ? ' selected' : '') + '>' + l + '</option>').join("");
+  div.innerHTML =
+    '<button class="entry-remove" onclick="this.parentElement.remove()" title="Remove">&times;</button>' +
+    '<div class="field"><label>Language</label><input class="lang-name" placeholder="English" value="' + escapeAttr(data.language) + '" /></div>' +
+    '<div class="row-3">' +
+    '<div class="field"><label>Listening</label><select class="lang-listening">' + opt(data.listening || "B2") + '</select></div>' +
+    '<div class="field"><label>Reading</label><select class="lang-reading">' + opt(data.reading || "B2") + '</select></div>' +
+    '<div class="field"><label>Spoken interaction</label><select class="lang-si">' + opt(data.spokenInteraction || "B2") + '</select></div>' +
+    '</div>' +
+    '<div class="row">' +
+    '<div class="field"><label>Spoken production</label><select class="lang-sp">' + opt(data.spokenProduction || "B2") + '</select></div>' +
+    '<div class="field"><label>Writing</label><select class="lang-writing">' + opt(data.writing || "B2") + '</select></div>' +
+    '</div>';
+  list.appendChild(div);
+}
+
+// ============ Europass CV rendering ============
+function buildEuropassCVHTML() {
+  function fmtDate(d) {
+    if (!d) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      const date = new Date(d);
+      return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    }
+    return d;
+  }
+  function dateRange(s, e) { return [s, e].filter(Boolean).join(" — ") || "—"; }
+
+  const eduHTML = europass.education.length
+    ? europass.education.map(e =>
+        '<div class="ep-entry">' +
+        '<div class="ep-entry-dates">' + dateRange(e.startDate, e.endDate) + '</div>' +
+        '<div class="ep-entry-title">' + esc(e.degree) + '</div>' +
+        '<div class="ep-entry-org">' + esc(e.institution) + '</div>' +
+        (e.subjects ? '<div class="ep-entry-desc">' + esc(e.subjects) + '</div>' : '') +
+        '</div>'
+      ).join("")
+    : '<em>—</em>';
+
+  const expHTML = europass.experience.length
+    ? europass.experience.map(e =>
+        '<div class="ep-entry">' +
+        '<div class="ep-entry-dates">' + dateRange(e.startDate, e.endDate) + '</div>' +
+        '<div class="ep-entry-title">' + esc(e.position) + '</div>' +
+        '<div class="ep-entry-org">' + esc(e.employer) + '</div>' +
+        (e.description ? '<div class="ep-entry-desc">' + esc(e.description) + '</div>' : '') +
+        '</div>'
+      ).join("")
+    : '';
+
+  const langTable =
+    '<table class="ep-lang-table">' +
+    '<tr><th rowspan="2">Language</th><th colspan="2">Understanding</th><th colspan="2">Speaking</th><th rowspan="2">Writing</th></tr>' +
+    '<tr><th>Listening</th><th>Reading</th><th>Spoken interaction</th><th>Spoken production</th></tr>' +
+    europass.languages.map(l =>
+      '<tr><td class="ep-lang-name">' + esc(l.language) + '</td>' +
+      '<td>' + l.listening + '</td><td>' + l.reading + '</td>' +
+      '<td>' + l.spokenInteraction + '</td><td>' + l.spokenProduction + '</td>' +
+      '<td>' + l.writing + '</td></tr>'
+    ).join("") +
+    '</table>';
+
+  return '<div class="europass-cv" id="europass-cv-doc">' +
+    '<div class="ep-header">' +
+      '<div class="ep-header-left">' +
+        '<div class="ep-flag"></div>' +
+        '<div><h1>' + esc(europass.fullName) + '</h1>' +
+        '<div class="ep-sub">' + esc(europass.address) + '</div></div>' +
+      '</div>' +
+      '<div style="text-align:right;"><div style="font-size:13pt; font-weight:300;">Europass</div><div class="ep-sub">Curriculum vitae</div></div>' +
+    '</div>' +
+    '<div class="ep-body">' +
+      '<div class="ep-row"><div class="ep-label">Personal information</div><div class="ep-value">' +
+        (europass.dob ? '<div><strong>Date of birth:</strong> ' + fmtDate(europass.dob) + '</div>' : '') +
+        (europass.nationality ? '<div><strong>Nationality:</strong> ' + esc(europass.nationality) + '</div>' : '') +
+        (europass.phone ? '<div><strong>Phone:</strong> ' + esc(europass.phone) + '</div>' : '') +
+        (europass.email ? '<div><strong>Email:</strong> ' + esc(europass.email) + '</div>' : '') +
+      '</div></div>' +
+
+      (europass.bio || europass.degree || europass.interests
+        ? '<div class="ep-row"><div class="ep-label">Career objective</div><div class="ep-value">' +
+          (europass.degree ? '<div><strong>Target:</strong> ' + esc(europass.degree) + '</div>' : '') +
+          (europass.interests ? '<div><strong>Research interests:</strong> ' + esc(europass.interests) + '</div>' : '') +
+          (europass.bio ? '<div style="margin-top:6px;">' + esc(europass.bio) + '</div>' : '') +
+        '</div></div>'
+        : '') +
+
+      '<div class="ep-row"><div class="ep-label">Education and training</div><div class="ep-value">' + eduHTML + '</div></div>' +
+
+      (expHTML
+        ? '<div class="ep-row"><div class="ep-label">Work experience</div><div class="ep-value">' + expHTML + '</div></div>'
+        : '') +
+
+      '<div class="ep-row"><div class="ep-label">Languages</div><div class="ep-value">' +
+        '<div><strong>Mother tongue:</strong> ' + esc(europass.motherTongue) + '</div>' +
+        (europass.languages.length ? '<div style="margin-top:8px;">' + langTable + '</div>' : '') +
+        '<div style="margin-top:6px; font-size:8pt; color:#666;">Levels: A1/A2 Basic · B1/B2 Independent · C1/C2 Proficient (CEFR)</div>' +
+      '</div></div>' +
+
+      '<div class="ep-row"><div class="ep-label">Digital skills</div><div class="ep-value">' +
+        '<div><strong>Self-assessed:</strong> ' + esc(europass.digitalLevel) + '</div>' +
+        (europass.digitalDetails ? '<div>' + esc(europass.digitalDetails) + '</div>' : '') +
+      '</div></div>' +
+
+      (europass.publications || europass.honours
+        ? '<div class="ep-row"><div class="ep-label">Additional information</div><div class="ep-value">' +
+          (europass.publications ? '<div style="margin-bottom:8px;"><strong>Publications</strong><div style="white-space:pre-line; font-size:10pt;">' + esc(europass.publications) + '</div></div>' : '') +
+          (europass.honours ? '<div><strong>Honours / awards</strong><div style="white-space:pre-line; font-size:10pt;">' + esc(europass.honours) + '</div></div>' : '') +
+        '</div></div>'
+        : '') +
+
+    '</div></div>';
+}
+
+function previewEuropassCV() {
+  readEuropassFromForm();
+  if (!europassMandatoryComplete()) {
+    toast("Please fill in all required (*) fields first");
+    return;
+  }
+  document.getElementById("cv-render-target").innerHTML = buildEuropassCVHTML();
+  document.getElementById("cv-preview-overlay").classList.add("show");
+}
+
+function closeCVPreview(e) {
+  if (e && e.target && e.target.id !== "cv-preview-overlay") return;
+  document.getElementById("cv-preview-overlay").classList.remove("show");
+}
+
+async function downloadEuropassPDF() {
+  readEuropassFromForm();
+  if (!europassMandatoryComplete()) { toast("Please fill in all required (*) fields"); return; }
+
+  // Create a properly-sized, visible-to-renderer wrapper. html2canvas does not
+  // capture elements positioned off-screen with negative left values reliably;
+  // they render as empty. We make the wrapper visually invisible (opacity 0,
+  // pointer-events none) but keep it in the visible viewport area.
+  const wrapper = document.createElement("div");
+  wrapper.style.cssText = "position:fixed; top:0; left:0; width:794px; z-index:-1; opacity:0; pointer-events:none; background:white;";
+  wrapper.innerHTML = buildEuropassCVHTML();
+  document.body.appendChild(wrapper);
+
+  const cvEl = wrapper.firstElementChild;
+  if (!cvEl) { document.body.removeChild(wrapper); toast("Failed to build CV"); return; }
+
+  toast("Generating PDF...");
+  try {
+    // Wait one frame so the browser computes layout
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+    const opt = {
+      margin: 0,
+      filename: (europass.fullName || "europass") + "-CV.pdf",
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: 794,
+        scrollX: 0, scrollY: 0
+      },
+      jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
+      pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+    };
+    await html2pdf().set(opt).from(cvEl).save();
+    toast("Downloaded CV");
+  } catch (err) {
+    console.error("PDF generation failed:", err);
+    toast("PDF failed: " + err.message);
+  } finally {
+    if (wrapper.parentNode) document.body.removeChild(wrapper);
+  }
+}
+
+function generateEuropassCV() {
+  readEuropassFromForm();
+  europass.generated = true;
+  saveEuropassData();
+  showCVSummary();
+}
+
+function showCVSummary() {
+  const el = document.getElementById("cv-summary");
+  if (el) {
+    el.style.display = "flex";
+    document.getElementById("cv-summary-sub").textContent =
+      "For " + europass.fullName + " · " + europass.education.length + " education, " +
+      europass.experience.length + " experience, " + (europass.languages.length + 1) + " languages.";
+  }
+}
+
+function saveEuropassData() {
+  if (!CURRENT_USER) return;
+  const json = JSON.stringify(europass);
+  safeSet(userKey("europass"), json);
+  kvSave("europass", json);
+}
+function loadEuropassData() {
+  if (!CURRENT_USER) return;
+  const raw = safeGet(userKey("europass"));
+  if (raw) { try { europass = Object.assign(europass, JSON.parse(raw)); } catch(e) {} }
+}
+
+let CURRENT_USER = null;
+let GOOGLE_USER = null;    // { sub, name, email, picture, givenName }
+const MEM_STORE = {};
+function safeGet(k) { try { const v = localStorage.getItem(k); return v !== null ? v : (MEM_STORE[k] || null); } catch(e) { return MEM_STORE[k] || null; } }
+function safeSet(k, v) { try { localStorage.setItem(k, v); } catch(e) {} MEM_STORE[k] = v; }
+function userKey(s) { return "pm:" + (CURRENT_USER || "anon") + ":" + s; }
+
+// --- Vercel KV Sync Layer ---
+// localStorage-first, KV-sync-behind. If KV is down, app works as before.
+const KV_DEBOUNCE = {};
+function kvSave(key, value) {
+  if (!CURRENT_USER) return;
+  const token = safeGet("pm:google_credential");
+  if (!token) return;
+  // Debounce "state" key (saves frequently)
+  if (key === "state") {
+    clearTimeout(KV_DEBOUNCE.state);
+    KV_DEBOUNCE.state = setTimeout(() => kvSaveNow(key, value, token), 2000);
+  } else {
+    kvSaveNow(key, value, token);
+  }
+}
+function kvSaveNow(key, value, token) {
+  fetch("/api/store", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+    body: JSON.stringify({ action: "save", key: key, value: value })
+  }).catch(err => console.warn("KV save failed:", err));
+}
+async function kvLoadAll() {
+  const token = safeGet("pm:google_credential");
+  if (!token) return null;
+  try {
+    const res = await fetch("/api/store", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify({ action: "load-all" })
+    });
+    if (!res.ok) { console.warn("KV load-all failed:", res.status); return null; }
+    const json = await res.json();
+    return json.data || null;
+  } catch (err) { console.warn("KV load-all error:", err); return null; }
+}
+async function syncFromKV() {
+  try {
+    const data = await kvLoadAll();
+    if (!data) return;
+    // Write KV data into localStorage (only if KV has data and localStorage doesn't)
+    if (data.state) {
+      const localState = safeGet(userKey("state"));
+      if (!localState) safeSet(userKey("state"), typeof data.state === "string" ? data.state : JSON.stringify(data.state));
+    }
+    if (data.europass) {
+      const localEuropass = safeGet(userKey("europass"));
+      if (!localEuropass) safeSet(userKey("europass"), typeof data.europass === "string" ? data.europass : JSON.stringify(data.europass));
+    }
+    if (data.emailLog) {
+      const localLog = safeGet(userKey("emailLog"));
+      if (!localLog) safeSet(userKey("emailLog"), typeof data.emailLog === "string" ? data.emailLog : JSON.stringify(data.emailLog));
+    }
+    if (data.professors) {
+      const localProfs = safeGet(userKey("professors"));
+      if (!localProfs) safeSet(userKey("professors"), typeof data.professors === "string" ? data.professors : JSON.stringify(data.professors));
+    }
+    if (data.profStatus) {
+      var localPS = safeGet(userKey("profStatus"));
+      if (!localPS) safeSet(userKey("profStatus"), typeof data.profStatus === "string" ? data.profStatus : JSON.stringify(data.profStatus));
+    }
+    if (data.sentEmails) {
+      var localSE = safeGet(userKey("sentEmails"));
+      if (!localSE) safeSet(userKey("sentEmails"), typeof data.sentEmails === "string" ? data.sentEmails : JSON.stringify(data.sentEmails));
+    }
+  } catch (err) { console.warn("syncFromKV error:", err); }
+}
+function saveProfessors() {
+  if (!CURRENT_USER || PROFESSORS.length === 0) return;
+  const json = JSON.stringify(PROFESSORS);
+  safeSet(userKey("professors"), json);
+  kvSave("professors", json);
+}
+function loadProfessors() {
+  if (!CURRENT_USER) return;
+  const raw = safeGet(userKey("professors"));
+  if (raw) {
+    try {
+      const profs = JSON.parse(raw);
+      if (Array.isArray(profs) && profs.length > 0) {
+        PROFESSORS.splice(0, PROFESSORS.length, ...profs);
+      }
+    } catch(e) {}
+  }
+}
+// --- End KV Sync Layer ---
+
+function loadUserState() {
+  if (!CURRENT_USER) return;
+  const raw = safeGet(userKey("state"));
+  if (raw) {
+    try {
+      const s = JSON.parse(raw);
+      state.completed = new Set(s.completed || []);
+      state.selected  = new Set(s.selected  || []);
+      state.approved  = new Set(s.approved  || []);
+      state.rejected  = new Set(s.rejected  || []);
+      state.archived  = new Set(s.archived  || []);
+      state.current   = s.current || 1;
+      return;
+    } catch(e) {}
+  }
+  state.completed = new Set();
+  state.selected  = new Set();
+  state.approved  = new Set();
+  state.rejected  = new Set();
+  state.archived  = new Set();
+  state.current   = 1;
+}
+function saveUserState() {
+  if (!CURRENT_USER) return;
+  const json = JSON.stringify({ completed: [...state.completed], selected: [...state.selected], approved: [...state.approved], rejected: [...state.rejected], archived: [...state.archived], current: state.current });
+  safeSet(userKey("state"), json);
+  kvSave("state", json);
+}
+
+function initGoogleSignIn() {
+  if (typeof google === "undefined" || !google.accounts) return;
+  google.accounts.id.initialize({
+    client_id: GMAIL_CLIENT_ID,
+    callback: handleGoogleSignIn,
+    auto_select: false
+  });
+  var container = document.getElementById("g-signin-fallback");
+  if (container && !container.hasChildNodes()) {
+    google.accounts.id.renderButton(container, {
+      type: "standard", theme: "outline", size: "large", width: 320, text: "continue_with"
+    });
+  }
+}
+
+function triggerGoogleSignIn() {
+  initGoogleSignIn();
+}
+
+function decodeJwtPayload(token) {
+  var base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+  return JSON.parse(decodeURIComponent(atob(base64).split("").map(function(c) {
+    return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join("")));
+}
+
+async function handleGoogleSignIn(response) {
+  try {
+    var payload = decodeJwtPayload(response.credential);
+    GOOGLE_USER = {
+      sub: payload.sub,
+      name: payload.name,
+      email: payload.email,
+      picture: payload.picture || "",
+      givenName: payload.given_name || payload.name.split(" ")[0]
+    };
+    CURRENT_USER = payload.sub;
+
+    // Save credential for session restore
+    safeSet("pm:google_credential", response.credential);
+    safeSet("pm:google_exp", String(payload.exp));
+
+    // Update UI
+    document.getElementById("auth-screen").style.display = "none";
+    document.getElementById("main-app").style.display = "grid";
+
+    var pic = document.getElementById("user-pic");
+    if (GOOGLE_USER.picture) {
+      pic.innerHTML = '<img src="' + GOOGLE_USER.picture + '" alt="" referrerpolicy="no-referrer">';
+      pic.style.background = "none";
+    } else {
+      var initials = GOOGLE_USER.name.split(" ").map(function(w) { return w[0]; }).join("").toUpperCase().slice(0, 2);
+      pic.textContent = initials;
+      pic.style.background = "";
+    }
+    document.getElementById("user-name").textContent = GOOGLE_USER.givenName;
+    document.getElementById("user-email").textContent = GOOGLE_USER.email;
+    document.getElementById("user-menu").style.display = "flex";
+
+    // Sync from KV (pulls cloud data into localStorage for cross-device persistence)
+    await syncFromKV();
+
+    loadUserState();
+    loadEuropassData();
+    loadProfessors();
+    loadProfStatus();
+    loadSentEmails();
+
+    // Pre-fill name + email for new users (not full demo profile)
+    if (!europass.fullName) {
+      europass.fullName = GOOGLE_USER.name;
+      europass.email = GOOGLE_USER.email;
+    }
+    writeEuropassToForm();
+    goToStep(state.current || 1);
+    toast("Signed in as " + GOOGLE_USER.givenName);
+  } catch (err) {
+    console.error("Google Sign-In failed:", err);
+    toast("Sign-in failed \u2014 please try again");
+  }
+}
+
+function signOut() {
+  try { saveUserState(); saveEuropassData(); } catch(e) {}
+  if (typeof google !== "undefined" && google.accounts) {
+    google.accounts.id.disableAutoSelect();
+    if (GOOGLE_USER && GOOGLE_USER.sub) {
+      try { google.accounts.id.revoke(GOOGLE_USER.sub); } catch(e) {}
+    }
+  }
+  // Revoke Gmail token if active
+  if (gmailAccessToken && typeof google !== "undefined") {
+    try { google.accounts.oauth2.revoke(gmailAccessToken); } catch(e) {}
+    gmailAccessToken = null;
+    gmailConnectedEmail = null;
+  }
+  // Clear session
+  try {
+    localStorage.removeItem("pm:google_credential");
+    localStorage.removeItem("pm:google_exp");
+  } catch(e) {}
+  CURRENT_USER = null;
+  GOOGLE_USER = null;
+  document.getElementById("auth-screen").style.display = "grid";
+  document.getElementById("main-app").style.display = "none";
+  document.getElementById("user-menu").style.display = "none";
+}
+
+function renderSidebar() {
+  const el = document.getElementById("steps");
+  el.innerHTML = STEPS.map(s => {
+    const done = state.completed.has(s.id);
+    const active = state.current === s.id;
+    const cls = ["step", done ? "done" : "", active ? "active" : ""].join(" ").trim();
+    return '<li class="' + cls + '" onclick="goToStep(' + s.id + ')">' +
+      '<div class="step-marker"><span class="num">' + s.id + '</span></div>' +
+      '<div class="step-label">' + s.label + '</div>' +
+      '<div class="step-title">' + s.title + '</div>' +
+      '<div class="step-status"><span class="progress-tag"><span class="dot"></span>' + (done ? s.status : (active ? "In progress" : "Not started")) + '</span></div></li>';
+  }).join("");
+}
+
+function showStep(n) {
+  document.querySelectorAll(".step-content").forEach(el => el.classList.remove("active"));
+  const t = document.querySelector('.step-content[data-step="' + n + '"]');
+  if (t) t.classList.add("active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function goToStep(n) {
+  state.current = n;
+  showStep(n);
+  renderSidebar();
+  if (n === 2) {
+    renderDiscovery();
+    // Auto-generate query chips on first visit if user has interests
+    if (!SEARCH_QUERIES.length && (europass.interests || "").trim()) {
+      generateQueries();
+    }
+  }
+  if (n === 3) renderScoringExplanation();
+  if (n === 4) renderApproval();
+  if (n === 5) { if (typeof renderGmailStatus === 'function') renderGmailStatus(); renderEmails(); }
+  if (n === 6) renderFollowUp();
+}
+
+function completeStep(n) {
+  if (n === 1) {
+    readEuropassFromForm();
+    if (!europassMandatoryComplete()) {
+      toast("Fill all required (*) fields to generate the CV");
+      return;
+    }
+    europass.generated = true;
+    saveEuropassData();
+    showCVSummary();
+  }
+  if (n === 2 && state.selected.size === 0) { toast("Select at least one professor in Step 2"); return; }
+  state.completed.add(n);
+  saveUserState();
+  if (n < 6) goToStep(n + 1); else renderSidebar();
+}
+
+function restart() {
+  state.current = 1;
+  state.completed.clear(); state.approved.clear(); state.rejected.clear();
+  state.sentAt = null;
+  state.selected = new Set();
+  SEARCH_QUERIES = [];
+  TARGET_COUNTRIES = [];
+  saveUserState();
+  goToStep(1);
+  toast("New campaign started");
+}
+
+async function fetchOpenAlexAuthors(query, countryCodes) {
+  // Strategy: look up the topic ID first, then filter authors by topic.
+  // This finds researchers who actually publish in the field, not just name matches.
+  // Falls back to name search if no matching topic is found.
+  var mailto = "mailto=hello@ecomsol.ai";
+  var countryFilter = (countryCodes && countryCodes.length) ? ",last_known_institutions.country_code:" + countryCodes.join("|") : "";
+  try {
+    var topicRes = await fetch("https://api.openalex.org/topics?search=" + encodeURIComponent(query) + "&per-page=1&" + mailto);
+    if (topicRes.ok) {
+      var topicData = await topicRes.json();
+      var topics = (topicData && topicData.results) || [];
+      if (topics.length && topics[0].id) {
+        var topicId = topics[0].id.replace("https://openalex.org/", "");
+        var authUrl = "https://api.openalex.org/authors?filter=topics.id:" + topicId + countryFilter + "&per-page=50&sort=cited_by_count:desc&" + mailto;
+        var authRes = await fetch(authUrl);
+        if (authRes.ok) {
+          var authData = await authRes.json();
+          if (authData && authData.results && authData.results.length > 0) return authData.results;
+        }
+      }
+    }
+  } catch(e) { console.warn("Topic-based search failed for '" + query + "':", e); }
+  // Fallback: name-based author search (country filter not supported on search endpoint)
+  var url = "https://api.openalex.org/authors?search=" + encodeURIComponent(query) + "&per-page=50&sort=cited_by_count:desc&" + mailto;
+  var res = await fetch(url);
+  if (!res.ok) throw new Error("OpenAlex returned " + res.status + " for '" + query + "'");
+  var data = await res.json();
+  return (data && data.results) || [];
+}
+
+async function runDiscoverySearch() {
+  // If no query chips, auto-generate first
+  if (!SEARCH_QUERIES.length) { await generateQueries(); }
+  if (!SEARCH_QUERIES.length) { toast("Add at least one search query"); return; }
+
+  const s = studentContext();
+  const btn = document.getElementById("search-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Searching..."; }
+
+  const aiAvailable = !!AI_CFG.apiKey || AI_CFG.provider === "claude";
+  const queries = SEARCH_QUERIES.slice();
+  const minPapers = parseInt(document.getElementById("min-papers").value) || 20;
+  const countryCodes = TARGET_COUNTRIES.slice();
+
+  toast("Searching OpenAlex: " + queries.join(", "));
+
+  try {
+    // Parallel fetch + dedupe
+    const resultsPerQuery = await Promise.all(queries.map(function(q){
+      return fetchOpenAlexAuthors(q, countryCodes).catch(function(e){ console.warn(e); return []; });
+    }));
+    const seen = new Set();
+    const merged = [];
+    resultsPerQuery.forEach(function(list){
+      list.forEach(function(a){
+        if (a && a.id && !seen.has(a.id)) { seen.add(a.id); merged.push(a); }
+      });
+    });
+
+    if (merged.length === 0) {
+      toast("No results — try different queries or remove country filters");
+      if (btn) { btn.disabled = false; btn.textContent = "Search OpenAlex \u2192"; }
+      return;
+    }
+
+    // JS-side filter to drop topic-cluster / no-institution / low-output profiles
+    const TOPIC_WORDS = new Set(["algorithm","method","approach","technique","techniques","optimization","framework","analysis","deep","learning","machine","artificial","intelligence","survey","review","study"]);
+    const looksLikeTopic = function(name) {
+      if (!name) return true;
+      var words = name.trim().split(/\s+/);
+      if (words.length > 6) return true;
+      if (name.toLowerCase() === name && words.length > 1) return true;
+      if (words.length > 1 && words.every(function(w){ return TOPIC_WORDS.has(w.toLowerCase()); })) return true;
+      return false;
+    };
+
+    let realProfs = merged
+      .filter(function(a){
+        if ((a.works_count || 0) < minPapers) return false;
+        const inst = (a.last_known_institutions && a.last_known_institutions[0]) || (a.affiliations && a.affiliations[0] && a.affiliations[0].institution) || null;
+        if (!inst || !inst.display_name) return false;
+        if (looksLikeTopic(a.display_name)) return false;
+        return true;
+      })
+      .slice(0, 30)
+      .map(function(a, i){
+        const inst = (a.last_known_institutions && a.last_known_institutions[0]) || (a.affiliations && a.affiliations[0] && a.affiliations[0].institution) || {};
+        const topics = (a.topics || []).slice(0, 3).map(function(t){return t.display_name;});
+        const concepts = (a.x_concepts || []).slice(0, 3).map(function(c){return c.display_name;});
+        const tagPool = topics.length ? topics : concepts;
+        var areaLabel = "general";
+        var allTopicText = tagPool.join(" ").toLowerCase() + " " + (a.display_name || "").toLowerCase();
+        // Check CS/AI/ML first (highest priority for ambiguous terms like "neural")
+        if (/\b(computer|comput|machine learn|artificial intel|nlp|natural language|vision|deep learn|data mining|software|cyber|information retrieval|neural network|reinforcement learn)\b/i.test(allTopicText)) areaLabel = "ml";
+        else if (/\b(engineer|robotic|mechanical|electrical|signal|control system|circuit|antenna|power system)\b/i.test(allTopicText)) areaLabel = "eng";
+        else if (/\b(neuroscien|brain|cognitive neurosci|neuro(?!n)|eeg|fmri|cortex|hippocampus)\b/i.test(allTopicText)) areaLabel = "neuro";
+        else if (/\b(biolog|biomedic|genomic|protein|cell\b|molecular|genetic|ecology|zoolog|botan)\b/i.test(allTopicText)) areaLabel = "bio";
+        else if (/\b(physic|quantum|material science|optic|photon|astrophys|particle)\b/i.test(allTopicText)) areaLabel = "physics";
+        else if (/\b(chemi|chemical|polymer|catalys|organic|inorganic|spectroscop)\b/i.test(allTopicText)) areaLabel = "chemistry";
+        else if (/\b(econom|financ|business|market|accounting)\b/i.test(allTopicText)) areaLabel = "econ";
+        else if (/\b(psycholog|behavioral|cogniti|mental health|psychiatr)\b/i.test(allTopicText)) areaLabel = "psych";
+        else if (/\b(medical|clinical|surgery|patholog|pharmac|epidemiolog|oncolog)\b/i.test(allTopicText)) areaLabel = "medical";
+        else if (/\b(geolog|geophys|climate|ocean|atmospher|environment)\b/i.test(allTopicText)) areaLabel = "earth";
+        else if (/\b(mathematic|algebra|topology|statistic|combinat|number theory)\b/i.test(allTopicText)) areaLabel = "math";
+        return {
+          id: 1000 + i, name: a.display_name, email: "",
+          aff: inst.display_name || "Unknown affiliation", country: inst.country_code || "", area: areaLabel,
+          interests: tagPool.slice(0, 2).join(", ") || queries[0] || "",
+          tags: [(a.cited_by_count || 0).toLocaleString() + " citations", (a.works_count || 0) + " papers", a.summary_stats && a.summary_stats.h_index ? ("h-index " + a.summary_stats.h_index) : "active"],
+          score: Math.round(70 + ((a.cited_by_count || 0) > 5000 ? 25 : (a.cited_by_count || 0) > 1000 ? 15 : 5) + Math.random() * 5)
+        };
+      });
+
+    if (realProfs.length === 0) {
+      toast("No professors found. Try different queries or lower the minimum papers threshold.");
+      if (btn) { btn.disabled = false; btn.textContent = "Search OpenAlex \u2192"; }
+      return;
+    }
+
+    // Filter out professors from clearly unrelated fields based on student interests
+    var studentText = (s.interests + " " + (s.degree || "") + " " + (s.bio || "")).toLowerCase();
+    var studentAreas = new Set();
+    if (/\b(computer|software|machine learn|artificial intel|ai|nlp|deep learn|cyber|data science|algorithm|programming)\b/.test(studentText)) studentAreas.add("ml");
+    if (/\b(engineer|robotic|mechanical|electrical|signal|hardware|iot|embedded)\b/.test(studentText)) studentAreas.add("eng");
+    if (/\b(neuroscien|brain|neural|cognitive|neuro|eeg|fmri)\b/.test(studentText)) studentAreas.add("neuro");
+    if (/\b(biolog|biomedic|genomic|protein|cell|molecular|genetic|bioinformatics)\b/.test(studentText)) studentAreas.add("bio");
+    if (/\b(physic|quantum|material|optic|photon)\b/.test(studentText)) studentAreas.add("physics");
+    if (/\b(chemi|chemical|polymer|catalys)\b/.test(studentText)) studentAreas.add("chemistry");
+    if (/\b(econom|financ|business|market)\b/.test(studentText)) studentAreas.add("econ");
+    if (/\b(psycholog|behavioral|cogniti)\b/.test(studentText)) studentAreas.add("psych");
+    if (/\b(medical|clinical|surgery|patholog|pharmac|epidemiolog|health)\b/.test(studentText)) studentAreas.add("medical");
+    if (/\b(geolog|geophys|climate|ocean|atmospher|environment)\b/.test(studentText)) studentAreas.add("earth");
+    if (/\b(mathematic|algebra|topology|statistic|combinat|number theory|math)\b/.test(studentText)) studentAreas.add("math");
+    // Cross-discipline allowances
+    if (studentAreas.has("ml")) { studentAreas.add("math"); studentAreas.add("eng"); }
+    if (studentAreas.has("eng")) { studentAreas.add("ml"); }
+    if (studentAreas.size === 0) studentAreas.add("general"); // fallback if no areas detected
+    var beforeFilter = realProfs.length;
+    var unfilteredProfs = realProfs.slice(); // keep copy before filtering
+    realProfs = realProfs.filter(function(p) { return studentAreas.has(p.area); });
+    // If strict filter leaves < 5 professors, also allow "general" (unclassified) ones through
+    if (realProfs.length < 5) {
+      studentAreas.add("general");
+      realProfs = unfilteredProfs.filter(function(p) { return studentAreas.has(p.area); });
+    }
+    if (realProfs.length === 0) realProfs = merged.slice(0, 15).map(function(a,i){ return { id: 1000+i, name: a.display_name, aff: "Unknown", area: "general", interests: "", tags: [], score: 50 }; }); // fallback
+    if (beforeFilter > realProfs.length) console.log("Field filter removed " + (beforeFilter - realProfs.length) + " off-topic professors");
+
+    // Rerank with LLM if available, then take top 15
+    if (aiAvailable && realProfs.length > 1) {
+      toast("AI is ranking " + realProfs.length + " candidates against your CV...");
+      try { realProfs = await aiRerankProfessors(s, realProfs); }
+      catch(e) { console.warn("Rerank failed:", e); }
+    }
+    // Remove professors AI scored below 40 (clearly off-topic)
+    var relevant = realProfs.filter(function(p) { return p.score >= 40; });
+    if (relevant.length >= 3) realProfs = relevant;
+    realProfs = realProfs.slice(0, 15);
+
+    PROFESSORS.splice(0, PROFESSORS.length, ...realProfs);
+    saveProfessors();
+    state.selected = new Set(realProfs.map(function(p){return p.id;}));
+    state.approved.clear(); state.rejected.clear();
+    saveUserState();
+    document.getElementById("stat-catalog").textContent = realProfs.length + " professors";
+    document.getElementById("stat-source").textContent = aiAvailable ? "OpenAlex + AI-ranked" : "OpenAlex (live)";
+    if (btn) { btn.disabled = false; btn.textContent = "Search OpenAlex \u2192"; }
+    renderDiscovery();
+    toast("Loaded " + realProfs.length + (aiAvailable ? " AI-ranked professors" : " professors"));
+  } catch (err) { console.error(err); toast("Failed: " + err.message); if (btn) { btn.disabled = false; btn.textContent = "Search OpenAlex \u2192"; } }
+}
+
+let DISCOVERY_FILTER = null;
+let COUNTRY_FILTER = "";
+let SEARCH_QUERIES = [];
+let TARGET_COUNTRIES = [];
+
+function renderQueryChips() {
+  var el = document.getElementById("query-chips"); if (!el) return;
+  if (!SEARCH_QUERIES.length) { el.innerHTML = '<span style="color:var(--text-soft); font-size:12px;">No queries yet — click "Generate from CV" or type one above</span>'; return; }
+  el.innerHTML = SEARCH_QUERIES.map(function(q, i) {
+    return '<span style="display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-size:13px; font-weight:500;">' +
+      esc(q) + ' <span onclick="removeQueryChip(' + i + ')" style="cursor:pointer; font-size:16px; line-height:1; opacity:0.7;">&times;</span></span>';
+  }).join("");
+}
+
+function addQueryChip(text) {
+  var input = document.getElementById("query-input");
+  var val = (text || (input ? input.value : "")).trim();
+  if (!val) return;
+  if (SEARCH_QUERIES.indexOf(val) < 0) SEARCH_QUERIES.push(val);
+  if (input) input.value = "";
+  renderQueryChips();
+}
+
+function removeQueryChip(idx) {
+  SEARCH_QUERIES.splice(idx, 1);
+  renderQueryChips();
+}
+
+function renderCountryChips() {
+  var el = document.getElementById("country-chips"); if (!el) return;
+  if (!TARGET_COUNTRIES.length) { el.innerHTML = '<span style="color:var(--text-soft); font-size:12px;">Worldwide (no country filter)</span>'; return; }
+  var COUNTRY_NAMES = {US:"United States",GB:"United Kingdom",CA:"Canada",DE:"Germany",AU:"Australia",NL:"Netherlands",CH:"Switzerland",SE:"Sweden",SG:"Singapore",FR:"France",JP:"Japan",KR:"South Korea",AT:"Austria",DK:"Denmark",NO:"Norway",FI:"Finland",BE:"Belgium",IT:"Italy",ES:"Spain",IE:"Ireland",HK:"Hong Kong",NZ:"New Zealand",IL:"Israel"};
+  el.innerHTML = TARGET_COUNTRIES.map(function(code, i) {
+    var name = COUNTRY_NAMES[code] || code;
+    return '<span style="display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:999px; background:#ecfdf5; color:var(--success); font-size:13px; font-weight:500;">' +
+      esc(name) + ' <span onclick="removeCountryChip(' + i + ')" style="cursor:pointer; font-size:16px; line-height:1; opacity:0.7;">&times;</span></span>';
+  }).join("");
+}
+
+function addCountryChip(code) {
+  if (!code) return;
+  if (TARGET_COUNTRIES.indexOf(code) < 0) TARGET_COUNTRIES.push(code);
+  renderCountryChips();
+}
+
+function removeCountryChip(idx) {
+  TARGET_COUNTRIES.splice(idx, 1);
+  renderCountryChips();
+}
+
+async function generateQueries() {
+  var btn = document.getElementById("generate-queries-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Generating..."; }
+  var s = studentContext();
+  if (!(s.interests || "").trim()) {
+    toast("Fill in research interests in Step 1 first");
+    if (btn) { btn.disabled = false; btn.textContent = "Generate from CV"; }
+    return;
+  }
+  var aiAvailable = !!AI_CFG.apiKey || AI_CFG.provider === "claude";
+  var queries = [];
+  if (aiAvailable) {
+    try {
+      var picked = await aiPickQueries(s);
+      if (picked && picked.length) queries = picked;
+    } catch(e) { console.warn("aiPickQueries failed:", e); }
+  }
+  if (!queries.length) {
+    queries = s.interests.split(",").map(function(q){ return q.trim(); }).filter(Boolean).slice(0, 5);
+  }
+  SEARCH_QUERIES = queries;
+  renderQueryChips();
+  if (btn) { btn.disabled = false; btn.textContent = "Generate from CV"; }
+  toast("Generated " + queries.length + " search quer" + (queries.length === 1 ? "y" : "ies"));
+}
+
+function selectAllProfs() {
+  PROFESSORS.forEach(function(p){ state.selected.add(p.id); });
+  saveUserState(); renderDiscovery(); updateSelectionUI();
+}
+
+function deselectAllProfs() {
+  state.selected.clear();
+  saveUserState(); renderDiscovery(); updateSelectionUI();
+}
+
+function updateSelectionUI() {
+  const countEl = document.getElementById("selection-count");
+  const btn = document.getElementById("step2-next-btn");
+  if (countEl) countEl.textContent = state.selected.size + " of " + PROFESSORS.length + " selected";
+  if (btn) {
+    if (state.selected.size === 0) {
+      btn.disabled = true;
+      btn.textContent = "Select at least one professor";
+    } else {
+      btn.disabled = false;
+      btn.textContent = "Run scoring on " + state.selected.size + " professor" + (state.selected.size > 1 ? "s" : "") + " \u2192";
+    }
+  }
+}
+
+function renderDiscoveryChips() {
+  const el = document.getElementById("discovery-filters"); if (!el) return;
+  const counts = {};
+  PROFESSORS.forEach(p => { const k = p.aff || "Unknown"; counts[k] = (counts[k] || 0) + 1; });
+  const top = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0, 6);
+  el.innerHTML = '<span class="chip ' + (DISCOVERY_FILTER === null ? "active" : "") + '" onclick="setDiscoveryFilter(null)">All (' + PROFESSORS.length + ')</span>' +
+    top.map(([name, n]) => '<span class="chip ' + (DISCOVERY_FILTER === name ? "active" : "") + '" onclick="setDiscoveryFilter(' + JSON.stringify(name).replace(/"/g, '&quot;') + ')">' + name + ' (' + n + ')</span>').join("");
+}
+function setDiscoveryFilter(val) { DISCOVERY_FILTER = val; renderDiscoveryChips(); renderDiscovery(); }
+function setCountryFilter(val) { COUNTRY_FILTER = val; renderDiscoveryChips(); renderDiscovery(); }
+function googleEmailSearchUrl(p) { return "https://www.google.com/search?q=" + encodeURIComponent('"' + p.name + '" ' + (p.aff || "") + ' email'); }
+function addEmailFor(id, ev) {
+  if (ev) ev.stopPropagation();
+  const p = PROFESSORS.find(x => x.id === id); if (!p) return;
+  const e = prompt("Paste " + p.name + "'s email:", p.email || "");
+  if (e === null) return;
+  const trimmed = e.trim();
+  if (trimmed && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(trimmed)) { alert("Invalid email."); return; }
+  p.email = trimmed; renderDiscovery(); toast(trimmed ? "Email added" : "Email cleared");
+}
+
+function renderCountryDropdown() {
+  var sel = document.getElementById("country-filter"); if (!sel) return;
+  var countries = {};
+  PROFESSORS.forEach(function(p) { if (p.country) countries[p.country] = (countries[p.country] || 0) + 1; });
+  var sorted = Object.entries(countries).sort(function(a,b) { return b[1] - a[1]; });
+  sel.innerHTML = '<option value="">All countries (' + PROFESSORS.length + ')</option>' +
+    sorted.map(function(e) { return '<option value="' + e[0] + '"' + (COUNTRY_FILTER === e[0] ? ' selected' : '') + '>' + e[0] + ' (' + e[1] + ')</option>'; }).join("");
+}
+function renderDiscovery() {
+  const list = document.getElementById("prof-list-discovery"); if (!list) return;
+  var resultsCard = document.getElementById("results-card");
+  if (resultsCard) resultsCard.style.display = PROFESSORS.length ? "" : "none";
+  renderQueryChips();
+  renderCountryChips();
+  renderDiscoveryChips();
+  renderCountryDropdown();
+  const sIn = document.getElementById("discovery-search");
+  const q = (sIn ? sIn.value : "").toLowerCase().trim();
+  const filtered = PROFESSORS.filter(p => {
+    if (DISCOVERY_FILTER && p.aff !== DISCOVERY_FILTER) return false;
+    if (COUNTRY_FILTER && p.country !== COUNTRY_FILTER) return false;
+    if (q && (p.name + " " + (p.aff || "") + " " + (p.interests || "")).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+  if (filtered.length === 0) { list.innerHTML = '<div class="empty">No professors match.</div>'; return; }
+  list.innerHTML = filtered.map(p => {
+    const sel = state.selected.has(p.id);
+    const emailRow = p.email
+      ? '<span class="tag" style="background:var(--success-soft); color:var(--success);">' + p.email + '</span>'
+      : '<a class="tag" style="background:#fef3c7; color:#92400e; cursor:pointer; text-decoration:none;" href="' + googleEmailSearchUrl(p) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">&#128269; Search on Google</a>' +
+        '<a class="tag" style="background:#eef2ff; color:var(--accent); cursor:pointer; text-decoration:none;" onclick="addEmailFor(' + p.id + ', event)">+ Add email</a>';
+    return '<div class="prof ' + (sel ? "selected" : "") + '" onclick="toggleSelect(' + p.id + ')">' +
+      '<div class="avatar">' + initials(p.name) + '</div>' +
+      '<div class="prof-meta"><div class="prof-name">' + p.name + '</div>' +
+      '<div class="prof-aff">' + p.aff + (p.country ? ' &middot; ' + p.country : '') + ' &middot; ' + p.interests + '</div>' +
+      '<div class="prof-tags">' + p.tags.map(t => '<span class="tag">' + t + '</span>').join("") + emailRow + '</div></div>' +
+      '<div>' + (sel ? '<span class="tag" style="background:var(--accent-soft); color:var(--accent);">Selected</span>' : '<span class="tag">Tap to select</span>') + '</div></div>';
+  }).join("");
+  if (typeof updateSelectionUI === "function") updateSelectionUI();
+}
+
+function toggleSelect(id) {
+  if (state.selected.has(id)) state.selected.delete(id); else state.selected.add(id);
+  saveUserState(); renderDiscovery(); if (typeof updateSelectionUI === "function") updateSelectionUI();
+}
+
+function explanationFor(p) {
+  var profInterest = (p.interests || "").split(",")[0].trim();
+  var studentInterest = (europass.interests || "").split(",")[0].trim();
+  var tagNote = (p.tags && p.tags.length) ? p.tags[0] + "." : "Strong publication record.";
+  if (profInterest && studentInterest) {
+    return "Their work on " + profInterest + " aligns with your interest in " + studentInterest + ". " + tagNote;
+  }
+  if (profInterest) {
+    return "Their work on " + profInterest + " overlaps with your research profile. " + tagNote;
+  }
+  return "Research interests overlap with your profile. " + tagNote;
+}
+
+function renderScoringExplanation() {
+  const el = document.getElementById("scoring-explanation-list");
+  const profs = PROFESSORS.filter(p => state.selected.has(p.id)).sort((a,b) => b.score - a.score);
+  const aiOn = !!AI_CFG.apiKey || AI_CFG.provider === "claude";
+  const banner = aiOn
+    ? '<div class="card" style="font-size:12px; color:var(--success); background:var(--success-soft); padding: 8px 12px; margin-bottom: 12px;">&#10024; Personalized by ' + (AI_CFG.provider === "claude" ? "Claude" : "Gemini") + ' (' + AI_CFG.model + ')</div>'
+    : '<div class="card" style="font-size:12px; color:var(--text-muted); background:#f1f5f9; padding: 8px 12px; margin-bottom: 12px;">&#128161; Add an AI key in <a href="#" onclick="openAISettings(); return false;" style="color:var(--accent);">AI settings</a> for personalized explanations.</div>';
+  el.innerHTML = banner + '<div class="card">' + profs.map(p => {
+    const cls = p.score >= 85 ? "score-high" : p.score >= 70 ? "score-mid" : "score-low";
+    const placeholder = aiOn ? '<em style="color:var(--text-muted);">Generating...</em>' : explanationFor(p);
+    return '<details style="border-bottom:1px solid var(--border); padding: 14px 0;">' +
+      '<summary style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; list-style:none;">' +
+      '<div style="display:flex; align-items:center; gap:12px;"><div class="avatar">' + initials(p.name) + '</div>' +
+      '<div><div class="prof-name">' + p.name + '</div><div class="prof-aff">' + p.aff + '</div>' +
+      '<div class="score-bar"><div class="score-fill" style="width:' + p.score + '%"></div></div></div></div>' +
+      '<div class="score-pill ' + cls + '">' + p.score + '%</div></summary>' +
+      '<div class="explanation" id="exp-' + p.id + '" style="padding: 8px 0 4px 52px;"><strong>Why this is a match:</strong> ' + placeholder + '</div></details>';
+  }).join("") + '</div>';
+  if (aiOn) {
+    profs.forEach(async p => {
+      try {
+        const text = await aiExplanationFor(p);
+        const target = document.getElementById("exp-" + p.id);
+        if (target) target.innerHTML = '<strong>Why this is a match:</strong> ' + esc(text);
+      } catch (err) {
+        console.error("AI explanation failed for " + p.name + ":", err);
+        const target = document.getElementById("exp-" + p.id);
+        if (target) target.innerHTML = '<strong>Why this is a match:</strong> ' + explanationFor(p) +
+          '<div style="margin-top:8px; padding:8px 10px; background:#f1f5f9; color:var(--text-muted); border-radius:6px; font-size:11px;">Using template — <a href="#" onclick="openAISettings(); return false;" style="color:var(--accent);">add API key</a> for AI-personalized explanations</div>';
+      }
+    });
+  }
+}
+
+function renderApproval() {
+  const el = document.getElementById("approval-list");
+  const profs = PROFESSORS.filter(p => state.selected.has(p.id)).sort((a,b) => b.score - a.score);
+  el.innerHTML = profs.map(p => {
+    const status = state.approved.has(p.id) ? "approved" : state.rejected.has(p.id) ? "rejected" : "";
+    const cls = p.score >= 85 ? "score-high" : p.score >= 70 ? "score-mid" : "score-low";
+    return '<div class="approval-card ' + status + '">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center; gap:12px;">' +
+      '<div style="display:flex; align-items:center; gap:12px;"><div class="avatar">' + initials(p.name) + '</div>' +
+      '<div><div class="prof-name">' + p.name + '</div><div class="prof-aff">' + p.aff + '</div></div></div>' +
+      '<div class="score-pill ' + cls + '">' + p.score + '%</div></div>' +
+      '<div class="approval-actions">' +
+      '<button class="btn ' + (state.approved.has(p.id) ? "btn-success" : "btn-secondary") + '" onclick="approve(' + p.id + ')">' + (state.approved.has(p.id) ? "&#10003; Approved" : "Approve") + '</button>' +
+      '<button class="btn btn-danger" onclick="reject(' + p.id + ')">' + (state.rejected.has(p.id) ? "Rejected" : "Skip") + '</button>' +
+      '</div></div>';
+  }).join("");
+  document.getElementById("approval-next").textContent = state.approved.size > 0 ? ("Draft " + state.approved.size + " emails →") : "Skip to emails →";
+}
+function approve(id) { state.approved.add(id); state.rejected.delete(id); saveUserState(); renderApproval(); }
+function reject(id) { state.rejected.add(id); state.approved.delete(id); saveUserState(); renderApproval(); }
+
+function emailBodyFor(p, name) {
+  const interest = p.interests.split(",")[0].trim();
+  return "Dear " + p.name + ",\n\nI'm " + name + ", reaching out about your work on " + interest + ". I've attached my CV for your review.\n\nBest,\n" + name;
+}
+
+function renderEmails() {
+  const el = document.getElementById("email-list");
+  const profs = PROFESSORS.filter(p => state.approved.has(p.id));
+  if (profs.length === 0) {
+    el.innerHTML = '<div class="card"><div class="empty">No professors approved — you can still add custom recipients below.</div></div>' +
+      '<div style="text-align:center; margin:16px 0;"><button class="btn btn-ghost" onclick="addCustomRecipient()" style="font-size:13px;">&#43; Add custom recipient</button></div>';
+    return;
+  }
+  const aiOn = !!AI_CFG.apiKey || AI_CFG.provider === "claude"; // Claude uses /api/claude proxy if no key set
+  const cvName = (europass.fullName || "europass") + "-CV.pdf";
+  const banner = aiOn
+    ? '<div class="card" style="font-size:12px; color:var(--success); background:var(--success-soft); padding: 10px 14px; display:flex; justify-content:space-between; align-items:center;"><span>&#10024; Personalized by ' + (AI_CFG.provider === "claude" ? "Claude" : "Gemini") + '.</span><span class="attachment-pill">&#128206; ' + cvName + '</span></div>'
+    : '<div class="card" style="font-size:12px; color:var(--text-muted); padding: 10px 14px; display:flex; justify-content:space-between; align-items:center;"><span>&#128161; <a href="#" onclick="openAISettings(); return false;" style="color:var(--accent);">Add an AI key</a> for AI drafts.</span><span class="attachment-pill">&#128206; ' + cvName + '</span></div>';
+  var selectBar = '<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px; padding:8px 14px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);">' +
+    '<label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px; font-weight:500;"><input type="checkbox" id="email-select-all" checked onchange="toggleAllEmailSelections(this.checked)" /> Select all</label>' +
+    '<span id="email-select-count" style="font-size:12px; color:var(--text-muted);">' + profs.length + ' of ' + profs.length + ' selected</span></div>';
+  el.innerHTML = banner + selectBar + profs.map(p => {
+    const studentName = europass.fullName || "Aisha Khan";
+    const degreeLevel = (europass.degree || "").toLowerCase().includes("master") ? "Master's" : (europass.degree || "").toLowerCase().includes("phd") ? "PhD" : "graduate";
+    const subject = "Prospective " + degreeLevel + " student interested in your work on " + p.interests.split(",")[0].trim();
+    const body = aiOn ? "Generating personalized draft with Gemini..." : emailBodyFor(p, studentName);
+    const isCustom = p.aff === "Custom recipient";
+    return '<div class="card"><div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;"><input type="checkbox" class="email-select-cb" data-prof-id="' + p.id + '" checked onchange="updateEmailSelectCount()" style="width:18px; height:18px; cursor:pointer;" /><div class="avatar">' + initials(p.name || "?") + '</div>' +
+      '<div>' + (isCustom
+        ? '<div class="prof-name">To: <input id="email-to-name-' + p.id + '" placeholder="Recipient name" value="' + (p.name || "") + '" style="border:1px solid var(--border); border-radius:4px; padding:2px 6px; font-size:inherit; width:200px;" /></div>' +
+          '<div class="prof-aff">Custom &middot; <input id="email-to-' + p.id + '" placeholder="recipient@example.com" value="' + (p.email || "") + '" style="border:1px solid var(--border); border-radius:4px; padding:2px 6px; font-size:12px; width:220px;" /></div>'
+        : '<div class="prof-name">To: ' + p.name + '</div><div class="prof-aff">' + p.aff + ' &middot; ' + (p.email || "(no email)") + '</div>'
+      ) + '</div></div>' +
+      '<div class="email-preview">' +
+      '<div class="email-row"><span class="label">From</span><span>' + (typeof gmailConnectedEmail !== 'undefined' && gmailConnectedEmail ? gmailConnectedEmail : studentName) + '</span></div>' +
+      '<div class="email-row"><span class="label">CC</span><span><input id="email-cc-' + p.id + '" placeholder="cc@example.com" style="border:none; background:transparent; width:100%;" /></span></div>' +
+      '<div class="email-row"><span class="label">BCC</span><span><input id="email-bcc-' + p.id + '" placeholder="bcc@example.com" style="border:none; background:transparent; width:100%;" /></span></div>' +
+      '<div class="email-row"><span class="label">Subject</span><span><input id="email-subject-' + p.id + '" style="border:none; background:transparent; width:100%;" value="' + subject + '" /></span></div>' +
+      '<div class="email-row"><span class="label">Attached</span><span class="attachment-pill">&#128206; ' + cvName + '</span></div>' +
+      '<textarea class="email-body" id="email-body-' + p.id + '" style="border:none; background:transparent; width:100%; min-height:180px;">' + body + '</textarea></div>' +
+      '<div class="actions"><button class="btn btn-ghost" onclick="regenerateEmail(' + p.id + ')">Regenerate</button>' +
+      '<button class="btn btn-ghost" style="color:var(--danger);" onclick="removeFromEmails(' + p.id + ')">Remove</button></div></div>';
+  }).join("") + '<div style="text-align:center; margin:16px 0;"><button class="btn btn-ghost" onclick="addCustomRecipient()" style="font-size:13px;">&#43; Add custom recipient</button></div>';
+  if (aiOn) {
+    profs.forEach(async p => {
+      try {
+        const text = await aiEmailDraftFor(p);
+        const ta = document.getElementById("email-body-" + p.id);
+        if (ta) ta.value = text;
+      } catch (err) {
+        const ta = document.getElementById("email-body-" + p.id);
+        if (ta) ta.value = emailBodyFor(p, europass.fullName) + "\n\n[Using template — add API key in AI Settings for personalized drafts]";
+      }
+    });
+  }
+}
+
+function toggleAllEmailSelections(checked) {
+  document.querySelectorAll(".email-select-cb").forEach(function(cb) { cb.checked = checked; });
+  updateEmailSelectCount();
+}
+function updateEmailSelectCount() {
+  var all = document.querySelectorAll(".email-select-cb");
+  var checked = document.querySelectorAll(".email-select-cb:checked");
+  var countEl = document.getElementById("email-select-count");
+  if (countEl) countEl.textContent = checked.length + " of " + all.length + " selected";
+  var selectAll = document.getElementById("email-select-all");
+  if (selectAll) selectAll.checked = checked.length === all.length;
+  var btn = document.getElementById("send-all-btn");
+  if (btn) btn.textContent = checked.length === all.length ? "Send all emails \u2192" : "Send " + checked.length + " email" + (checked.length !== 1 ? "s" : "") + " \u2192";
+}
+function sendSelectedEmails() {
+  var checked = document.querySelectorAll(".email-select-cb:checked");
+  if (checked.length === 0) { toast("Select at least one email to send"); return; }
+  var selectedIds = new Set();
+  checked.forEach(function(cb) { selectedIds.add(cb.dataset.profId); });
+  sendAllEmails(selectedIds);
+}
+
+async function regenerateEmail(profId) {
+  const p = PROFESSORS.find(x => x.id === profId); if (!p) return;
+  if (!AI_CFG.apiKey && AI_CFG.provider !== "claude") { toast("Add an AI key in settings or use Claude (default)"); return; }
+  // Clear all cached versions for this professor
+  Object.keys(AI_CACHE).forEach(function(k) { if (k.startsWith("email:" + p.id)) delete AI_CACHE[k]; });
+  try { Object.keys(localStorage).forEach(function(k) { if (k.indexOf("pm:aicache:email:" + p.id) === 0) localStorage.removeItem(k); }); } catch(e) {}
+  const ta = document.getElementById("email-body-" + p.id);
+  if (ta) ta.value = "Regenerating...";
+  try { const text = await aiEmailDraftFor(p); if (ta) ta.value = text; toast("Regenerated"); }
+  catch (err) { toast("AI failed: " + err.message); }
+}
+
+function addCustomRecipient() {
+  const id = Date.now();
+  const custom = { id: id, name: "", email: "", aff: "Custom recipient", interests: "", tags: [], score: 0 };
+  PROFESSORS.push(custom);
+  saveProfessors();
+  state.approved.add(id);
+  saveUserState();
+  renderEmails();
+  const toInput = document.getElementById("email-to-" + id);
+  if (toInput) toInput.focus();
+}
+
+function removeFromEmails(id) {
+  state.approved.delete(id);
+  const idx = PROFESSORS.findIndex(p => p.id === id && p.aff === "Custom recipient");
+  if (idx >= 0) { PROFESSORS.splice(idx, 1); saveProfessors(); }
+  saveUserState();
+  renderEmails();
+}
+
+const EMAILJS_CFG = { publicKey: "", serviceId: "", templateId: "", testRecipient: "" };
+function loadEmailJSConfig() {
+  const raw = safeGet("pm:emailjs");
+  if (raw) { try { Object.assign(EMAILJS_CFG, JSON.parse(raw)); } catch(e) {} }
+  if (EMAILJS_CFG.publicKey && window.emailjs) { try { emailjs.init({ publicKey: EMAILJS_CFG.publicKey }); } catch(e) {} }
+}
+function openSettings() {
+  document.getElementById("cfg-public-key").value = EMAILJS_CFG.publicKey;
+  document.getElementById("cfg-service-id").value = EMAILJS_CFG.serviceId;
+  document.getElementById("cfg-template-id").value = EMAILJS_CFG.templateId;
+  document.getElementById("cfg-test-recipient").value = EMAILJS_CFG.testRecipient;
+  document.getElementById("settings-overlay").classList.add("show");
+}
+function closeSettings(e) { if (e && e.target && e.target.id !== "settings-overlay") return; document.getElementById("settings-overlay").classList.remove("show"); }
+function saveSettings() {
+  EMAILJS_CFG.publicKey = document.getElementById("cfg-public-key").value.trim();
+  EMAILJS_CFG.serviceId = document.getElementById("cfg-service-id").value.trim();
+  EMAILJS_CFG.templateId = document.getElementById("cfg-template-id").value.trim();
+  EMAILJS_CFG.testRecipient = document.getElementById("cfg-test-recipient").value.trim();
+  safeSet("pm:emailjs", JSON.stringify(EMAILJS_CFG));
+  if (EMAILJS_CFG.publicKey && window.emailjs) { try { emailjs.init({ publicKey: EMAILJS_CFG.publicKey }); } catch(e) {} }
+  closeSettings(); toast("Settings saved");
+}
+
+// ── Gmail OAuth sending ──────────────────────────────────────────────────────
+let gmailAccessToken = null;
+let gmailConnectedEmail = null;
+
+// Restore Gmail session from localStorage (valid until token expires ~1hr)
+(function restoreGmailSession() {
+  try {
+    var saved = JSON.parse(localStorage.getItem("pm:gmail_session") || "null");
+    if (saved && saved.token && saved.email && saved.expiresAt > Date.now()) {
+      gmailAccessToken = saved.token;
+      gmailConnectedEmail = saved.email;
+      setTimeout(function() { renderGmailStatus(); startReplyPolling(); }, 100);
+    } else {
+      localStorage.removeItem("pm:gmail_session");
+    }
+  } catch(e) {}
+})();
+
+function connectGmail() {
+  const clientId = (typeof GMAIL_CLIENT_ID !== "undefined") ? GMAIL_CLIENT_ID : "";
+  if (!clientId || clientId.indexOf("YOUR_") >= 0) {
+    toast("Set GMAIL_CLIENT_ID in config.js first"); return;
+  }
+  if (typeof google === "undefined" || !google.accounts) {
+    toast("Google Identity Services not loaded yet — try again in a moment"); return;
+  }
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: "https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/gmail.readonly",
+    hint: (GOOGLE_USER && GOOGLE_USER.email) ? GOOGLE_USER.email : "",
+    callback: async (tokenResponse) => {
+      if (tokenResponse.error) { toast("Gmail auth failed: " + tokenResponse.error); return; }
+      gmailAccessToken = tokenResponse.access_token;
+      var expiresIn = (tokenResponse.expires_in || 3600) * 1000;
+      try {
+        const info = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+          headers: { Authorization: "Bearer " + gmailAccessToken }
+        }).then(r => r.json());
+        gmailConnectedEmail = info.email;
+        toast("Gmail connected: " + gmailConnectedEmail);
+      } catch(e) {
+        gmailConnectedEmail = (GOOGLE_USER && GOOGLE_USER.email) ? GOOGLE_USER.email : "your Gmail";
+      }
+      // Persist session so Gmail stays connected across page refreshes
+      try { localStorage.setItem("pm:gmail_session", JSON.stringify({ token: gmailAccessToken, email: gmailConnectedEmail, expiresAt: Date.now() + expiresIn })); } catch(e) {}
+      renderGmailStatus();
+      renderEmails();
+      checkGmailReplies();
+      startReplyPolling();
+    }
+  });
+  client.requestAccessToken();
+}
+
+function disconnectGmail() {
+  if (gmailAccessToken && typeof google !== "undefined") {
+    try { google.accounts.oauth2.revoke(gmailAccessToken); } catch(e) {}
+  }
+  gmailAccessToken = null;
+  gmailConnectedEmail = null;
+  stopReplyPolling();
+  try { localStorage.removeItem("pm:gmail_session"); } catch(e) {}
+  toast("Gmail disconnected");
+  renderGmailStatus();
+  renderEmails();
+}
+
+function renderGmailStatus() {
+  const el = document.getElementById("gmail-status");
+  if (!el) return;
+  const hasClientId = typeof GMAIL_CLIENT_ID !== "undefined" && GMAIL_CLIENT_ID.indexOf("YOUR_") < 0;
+  if (gmailConnectedEmail) {
+    el.innerHTML = '<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:var(--success-soft); border:1px solid var(--success); border-radius:var(--radius);">' +
+      '<span style="font-size:13px; color:var(--success);">&#10003; Sending from <strong>' + gmailConnectedEmail + '</strong></span>' +
+      '<button class="btn btn-ghost" style="font-size:12px; color:var(--danger);" onclick="disconnectGmail()">Disconnect</button></div>';
+  } else {
+    el.innerHTML = '<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 16px; background:#fffbeb; border:1px solid #fcd34d; border-radius:var(--radius);">' +
+      '<span style="font-size:13px; color:#92400e;">' +
+      (hasClientId
+        ? '&#128267; Connect your Gmail so emails are sent from your real account.'
+        : '&#9888;&#65039; Add <code>GMAIL_CLIENT_ID</code> to config.js to enable Gmail sending.') +
+      '</span>' +
+      (hasClientId ? '<button class="btn btn-primary" style="font-size:12px;" onclick="connectGmail()">Connect Gmail</button>' : '') +
+      '</div>';
+  }
+}
+
+async function sendViaGmailAPI(accessToken, to, subject, bodyText, fromName, fromEmail, cc, bcc) {
+  function b64u(str) {
+    return btoa(unescape(encodeURIComponent(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  const headers = [
+    "MIME-Version: 1.0",
+    "From: " + fromName + " <" + fromEmail + ">",
+    "To: " + to,
+  ];
+  if (cc) headers.push("Cc: " + cc);
+  if (bcc) headers.push("Bcc: " + bcc);
+  headers.push(
+    "Subject: =?UTF-8?B?" + btoa(unescape(encodeURIComponent(subject))) + "?=",
+    "Content-Type: text/plain; charset=UTF-8",
+    "",
+    bodyText
+  );
+  const mime = headers.join("\r\n");
+  const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + accessToken, "Content-Type": "application/json" },
+    body: JSON.stringify({ raw: b64u(mime) })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err.error && err.error.message) || "Gmail API error " + res.status);
+  }
+}
+
+function extractGmailBody(payload) {
+  function findPart(part) {
+    if (part.mimeType === "text/plain" && part.body && part.body.data) {
+      return atob(part.body.data.replace(/-/g, "+").replace(/_/g, "/"));
+    }
+    if (part.parts) {
+      for (var i = 0; i < part.parts.length; i++) {
+        var result = findPart(part.parts[i]);
+        if (result) return result;
+      }
+    }
+    return null;
+  }
+  var text = findPart(payload);
+  if (text) return text.trim();
+  return payload.snippet || "(Could not extract reply text)";
+}
+
+async function checkGmailReplies(silent) {
+  if (!gmailAccessToken) return;
+  var profEmails = {};
+  Object.keys(SENT_EMAILS).forEach(function(id) {
+    var s = SENT_EMAILS[id];
+    if (s && s.to) profEmails[s.to.toLowerCase()] = id;
+  });
+  if (Object.keys(profEmails).length === 0) return;
+
+  var addresses = Object.keys(profEmails);
+  var query = "from:(" + addresses.join(" OR ") + ")";
+  var earliest = Object.values(SENT_EMAILS).reduce(function(min, s) {
+    return s.sentAt && s.sentAt < min ? s.sentAt : min;
+  }, new Date().toISOString());
+  query += " after:" + earliest.split("T")[0];
+
+  try {
+    var res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages?q=" + encodeURIComponent(query) + "&maxResults=50", {
+      headers: { Authorization: "Bearer " + gmailAccessToken }
+    });
+    if (res.status === 401) { gmailAccessToken = null; gmailConnectedEmail = null; stopReplyPolling(); try { localStorage.removeItem("pm:gmail_session"); } catch(e) {} renderGmailStatus(); return; }
+    if (!res.ok) return;
+    var data = await res.json();
+    if (!data.messages || data.messages.length === 0) return;
+
+    var updated = 0;
+    for (var i = 0; i < Math.min(data.messages.length, 30); i++) {
+      var msg = data.messages[i];
+      try {
+        var detail = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/" + msg.id + "?format=full", {
+          headers: { Authorization: "Bearer " + gmailAccessToken }
+        });
+        if (!detail.ok) continue;
+        var msgData = await detail.json();
+
+        var fromHeader = (msgData.payload.headers || []).find(function(h) { return h.name.toLowerCase() === "from"; });
+        if (!fromHeader) continue;
+        var fromMatch = fromHeader.value.match(/<([^>]+)>/) || [null, fromHeader.value];
+        var fromEmail = (fromMatch[1] || "").toLowerCase().trim();
+
+        var profId = profEmails[fromEmail];
+        if (!profId) continue;
+        profId = parseInt(profId, 10) || profId;
+
+        var existing = getProfStatus(profId);
+        if (existing && (existing.stage === "replied" || existing.stage === "meeting")) continue;
+
+        var bodyText = extractGmailBody(msgData.payload);
+        var receivedAt = msgData.internalDate ? new Date(parseInt(msgData.internalDate, 10)).toISOString() : new Date().toISOString();
+
+        RESPONSES[profId] = {
+          receivedAt: receivedAt,
+          body: bodyText,
+          sentiment: "pending",
+          intent: "Pending AI analysis",
+          entities: [],
+          summary: "Reply detected from inbox \u2014 run AI analysis for details.",
+          action: { title: "Analyze reply", desc: "AI will process the response.", replyDraft: null }
+        };
+
+        PROF_STATUS[profId] = PROF_STATUS[profId] || {};
+        PROF_STATUS[profId].stage = "replied";
+        PROF_STATUS[profId].repliedAt = receivedAt;
+        updated++;
+      } catch (e) { console.warn("checkGmailReplies msg error:", e); }
+    }
+
+    if (updated > 0) {
+      saveProfStatus();
+      toast(updated + " new repl" + (updated === 1 ? "y" : "ies") + " detected from inbox");
+      if (state.current === 6) renderFollowUp();
+    } else if (!silent) {
+      toast("No new replies found");
+    }
+  } catch (err) { console.warn("checkGmailReplies error:", err); }
+}
+
+// Auto-check inbox every 60 seconds when Gmail is connected
+var _replyCheckInterval = null;
+function startReplyPolling() {
+  stopReplyPolling();
+  _replyCheckInterval = setInterval(function() {
+    if (gmailAccessToken && Object.keys(SENT_EMAILS).length > 0) {
+      checkGmailReplies(true);
+    }
+  }, 60000);
+}
+function stopReplyPolling() {
+  if (_replyCheckInterval) { clearInterval(_replyCheckInterval); _replyCheckInterval = null; }
+}
+
+async function manualCheckReplies() {
+  if (!gmailAccessToken) { toast("Connect Gmail first"); return; }
+  var btn = document.getElementById("btn-check-inbox");
+  if (btn) { btn.disabled = true; btn.textContent = "Checking..."; }
+  await checkGmailReplies();
+  if (btn) { btn.disabled = false; btn.textContent = "\u{1F4E7} Check inbox for replies"; }
+}
+
+// Send log: track when professors were last emailed
+function loadEmailLog() {
+  const raw = safeGet(userKey("emailLog"));
+  if (raw) { try { return JSON.parse(raw); } catch(e) {} }
+  return {};
+}
+function saveEmailLog(log) { const json = JSON.stringify(log); safeSet(userKey("emailLog"), json); kvSave("emailLog", json); }
+
+function profPreviouslySent(p, log) {
+  if (log[p.id]) {
+    var daysAgo = Math.round((Date.now() - new Date(log[p.id]).getTime()) / 86400000);
+    return (p.name || p.email || "This recipient") + " was emailed " + (daysAgo === 0 ? "today" : daysAgo + " day" + (daysAgo !== 1 ? "s" : "") + " ago");
+  }
+  return null;
+}
+
+async function sendAllEmails(selectedIds) {
+  const profs = PROFESSORS.filter(p => state.approved.has(p.id) && (!selectedIds || selectedIds.has(String(p.id))));
+  const studentName = europass.fullName || "Aisha";
+  const studentEmail = gmailConnectedEmail || europass.email || "a@s.edu";
+  const useGmail = !!gmailAccessToken && !!gmailConnectedEmail;
+  const useEmailJS = !useGmail && EMAILJS_CFG.publicKey && EMAILJS_CFG.serviceId && EMAILJS_CFG.templateId && window.emailjs;
+
+  const emailLog = loadEmailLog();
+  // Warn about previously sent recipients
+  var warnings = [];
+  for (const p of profs) {
+    var w = profPreviouslySent(p, emailLog);
+    if (w) warnings.push(w);
+  }
+  if (warnings.length > 0) {
+    var msg = "Warning — already emailed:\n\n" + warnings.join("\n") + "\n\nSend again anyway?";
+    if (!confirm(msg)) return;
+  }
+
+  if (!useGmail && !useEmailJS) {
+    const now = new Date().toISOString();
+    for (const p of profs) {
+      emailLog[p.id] = now;
+      var subj = (document.getElementById("email-subject-" + p.id) || {}).value || "";
+      var bdy = (document.getElementById("email-body-" + p.id) || {}).value || "";
+      var toAddr = (document.getElementById("email-to-" + p.id) || {}).value || p.email;
+      SENT_EMAILS[p.id] = { to: toAddr, subject: subj, body: bdy, sentAt: now };
+      PROF_STATUS[p.id] = { stage: "sent", sentAt: now };
+    }
+    saveSentEmails(); saveProfStatus();
+    saveEmailLog(emailLog);
+    state.sentAt = new Date(); state.completed.add(5);
+    toast(profs.length + " email(s) logged (mock — connect Gmail to send for real)");
+    setTimeout(() => goToStep(6), 600); return;
+  }
+
+  let ok = 0, failed = 0;
+  for (const p of profs) {
+    const subject = (document.getElementById("email-subject-" + p.id) || {}).value || "Prospective student interested in " + (p.interests || "").split(",")[0].trim();
+    const cc = (document.getElementById("email-cc-" + p.id) || {}).value || "";
+    const bcc = (document.getElementById("email-bcc-" + p.id) || {}).value || "";
+    const body = (document.getElementById("email-body-" + p.id) || {}).value || emailBodyFor(p, studentName);
+    const to = (document.getElementById("email-to-" + p.id) || {}).value || p.email;
+    if (!to) { failed++; continue; }
+    try {
+      if (useGmail) {
+        await sendViaGmailAPI(gmailAccessToken, to, subject, body, studentName, gmailConnectedEmail, cc, bcc);
+      } else {
+        await emailjs.send(EMAILJS_CFG.serviceId, EMAILJS_CFG.templateId, {
+          to_email: to, to_name: p.name, from_name: studentName, reply_to: studentEmail,
+          subject: subject, message: body,
+          cc_email: cc, bcc_email: bcc,
+          cv_filename: (europass.fullName || "europass") + "-CV.pdf",
+          cv_note: "(CV available on request)"
+        });
+      }
+      emailLog[p.id] = new Date().toISOString();
+      SENT_EMAILS[p.id] = { to: to, subject: subject, body: body, sentAt: emailLog[p.id] };
+      PROF_STATUS[p.id] = { stage: "sent", sentAt: emailLog[p.id] };
+      ok++;
+    } catch (err) { console.error(err); failed++; }
+  }
+  saveEmailLog(emailLog);
+  saveSentEmails(); saveProfStatus();
+  state.sentAt = new Date(); state.completed.add(5); saveUserState();
+  const via = useGmail ? " via Gmail" : " via EmailJS";
+  toast("Sent " + ok + (failed ? ", " + failed + " failed" : "") + via);
+  setTimeout(() => goToStep(6), 800);
+}
+
+// AI provider config. By default, Claude calls go through the /api/claude serverless
+// function (which holds CLAUDE_API_KEY as a Vercel env var, never exposed to the browser).
+// If the user enters their own key in AI Settings, that key is used directly instead.
+const AI_CFG = { provider: "claude", apiKey: "", model: "claude-haiku-4-5-20251001" };
+const AI_MODELS = {
+  gemini: [
+    { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash (fast, free)" },
+    { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+    { value: "gemini-2.0-flash-exp", label: "Gemini 2.0 Flash Experimental" }
+  ],
+  claude: [
+    { value: "claude-haiku-4-5-20251001", label: "Claude Haiku 4.5 (fast, cheap)" },
+    { value: "claude-sonnet-4-6", label: "Claude Sonnet 4.6 (balanced)" },
+    { value: "claude-opus-4-6", label: "Claude Opus 4.6 (best quality)" }
+  ]
+};
+const AI_PROVIDER_INFO = {
+  gemini: { keyLabel: "Gemini API Key", placeholder: "AIzaSy...", hintHTML: 'Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent);">aistudio.google.com/app/apikey</a>' },
+  claude: { keyLabel: "Claude API Key",  placeholder: "sk-ant-...", hintHTML: 'Get one at <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--accent);">console.anthropic.com</a>' }
+};
+function loadAICfg() { const raw = safeGet("pm:ai"); if (raw) { try { Object.assign(AI_CFG, JSON.parse(raw)); } catch(e) {} } }
+function updateAIModelOptions() {
+  const provider = document.getElementById("cfg-ai-provider").value;
+  const sel = document.getElementById("cfg-gemini-model");
+  const info = AI_PROVIDER_INFO[provider];
+  sel.innerHTML = AI_MODELS[provider].map(m => '<option value="' + m.value + '">' + m.label + '</option>').join("");
+  document.getElementById("cfg-key-label").textContent = info.keyLabel;
+  document.getElementById("cfg-gemini-key").placeholder = info.placeholder;
+  document.getElementById("cfg-key-hint").innerHTML = info.hintHTML;
+  // Default to first model when switching providers
+  if (!AI_MODELS[provider].some(m => m.value === sel.value)) sel.value = AI_MODELS[provider][0].value;
+}
+function openAISettings() {
+  document.getElementById("cfg-ai-provider").value = AI_CFG.provider || "gemini";
+  updateAIModelOptions();
+  document.getElementById("cfg-gemini-key").value = AI_CFG.apiKey;
+  if (AI_CFG.model) document.getElementById("cfg-gemini-model").value = AI_CFG.model;
+  document.getElementById("ai-settings-overlay").classList.add("show");
+}
+function closeAISettings(e) { if (e && e.target && e.target.id !== "ai-settings-overlay") return; document.getElementById("ai-settings-overlay").classList.remove("show"); }
+function saveAISettings() {
+  AI_CFG.provider = document.getElementById("cfg-ai-provider").value;
+  AI_CFG.apiKey = document.getElementById("cfg-gemini-key").value.trim();
+  AI_CFG.model = document.getElementById("cfg-gemini-model").value;
+  safeSet("pm:ai", JSON.stringify(AI_CFG));
+  closeAISettings();
+  toast(AI_CFG.apiKey ? ("AI enabled: " + AI_CFG.provider + " / " + AI_CFG.model) : "AI disabled");
+  if (state.current === 3) renderScoringExplanation();
+  if (state.current === 5) renderEmails();
+}
+
+const AI_CACHE = {};
+function aiCacheGet(k) { if (AI_CACHE[k]) return AI_CACHE[k]; const s = safeGet("pm:aicache:" + k); if (s) { AI_CACHE[k] = s; return s; } return null; }
+function aiCacheSet(k, v) { AI_CACHE[k] = v; safeSet("pm:aicache:" + k, v); }
+
+async function callGemini(prompt, jsonMode) {
+  if (!AI_CFG.apiKey) throw new Error("No Gemini API key");
+  const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(AI_CFG.model) + ":generateContent?key=" + encodeURIComponent(AI_CFG.apiKey);
+  const cfg = { temperature: jsonMode ? 0.3 : 0.4, maxOutputTokens: 800 };
+  if (jsonMode) cfg.responseMimeType = "application/json";
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: cfg }) });
+  if (!res.ok) { const errText = await res.text(); throw new Error("Gemini: " + res.status + " " + errText.slice(0, 200)); }
+  const data = await res.json();
+  const text = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+  if (!text) throw new Error("Empty response");
+  return text.trim();
+}
+
+async function callClaude(prompt, jsonMode) {
+  // Strategy:
+  //  1. If user has entered their own Claude API key in AI Settings, call Anthropic directly (BYOK).
+  //  2. Otherwise, proxy through /api/claude (a Vercel serverless function that holds CLAUDE_API_KEY
+  //     server-side as an env var). Key never exposed to the browser.
+  const userPrompt = jsonMode
+    ? prompt + "\n\nRespond ONLY with valid JSON. No prose, no markdown code fences. Just the raw JSON object."
+    : prompt;
+
+  let text;
+  if (AI_CFG.apiKey) {
+    // Direct call (BYOK)
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": AI_CFG.apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: AI_CFG.model,
+        max_tokens: 1024,
+        temperature: jsonMode ? 0.3 : 0.4,
+        messages: [{ role: "user", content: userPrompt }]
+      })
+    });
+    if (!res.ok) { const errText = await res.text(); throw new Error("Claude: " + res.status + " " + errText.slice(0, 300)); }
+    const data = await res.json();
+    text = data.content && data.content[0] && data.content[0].text;
+  } else {
+    // Server proxy
+    const res = await fetch("/api/claude", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt: userPrompt, model: AI_CFG.model, jsonMode: jsonMode })
+    });
+    if (res.status === 404 || res.status === 501 || res.status === 502 || res.status === 503) throw new Error("Claude proxy unavailable — configure an API key in AI Settings or deploy to Vercel");
+    if (!res.ok) { const data = await res.json().catch(() => ({})); throw new Error("Claude proxy unavailable — " + (data.error || "status " + res.status)); }
+    const data = await res.json();
+    text = data.text;
+  }
+
+  if (!text) throw new Error("Claude returned empty response");
+  return jsonMode ? text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "") : text.trim();
+}
+
+async function callAI(prompt, jsonMode) {
+  if (AI_CFG.provider === "claude") return callClaude(prompt, jsonMode);
+  return callGemini(prompt, jsonMode);
+}
+
+function studentContext() {
+  return {
+    name: europass.fullName || "the student",
+    institution: europass.institution || "",
+    degree: europass.degree || "",
+    interests: europass.interests || "",
+    bio: europass.bio || "",
+    education: europass.education || [],
+    experience: europass.experience || [],
+    publications: europass.publications || "",
+    honours: europass.honours || ""
+  };
+}
+
+// Render the student CV as a compact text block for LLM prompts
+function studentBlock(s) {
+  var parts = [];
+  parts.push("- Name: " + s.name);
+  if (s.institution) parts.push("- Current institution: " + s.institution);
+  if (s.degree) parts.push("- Target degree: " + s.degree);
+  if (s.interests) parts.push("- Research interests: " + s.interests);
+  if (s.bio) parts.push("- Bio: " + s.bio);
+  if (s.education && s.education.length) {
+    parts.push("- Education:");
+    s.education.forEach(function(e){
+      parts.push("  * " + (e.degree || "") + ", " + (e.institution || "") + " (" + (e.startDate || "") + "-" + (e.endDate || "") + ")" + (e.subjects ? " - " + e.subjects : ""));
+    });
+  }
+  if (s.experience && s.experience.length) {
+    parts.push("- Experience:");
+    s.experience.forEach(function(e){
+      parts.push("  * " + (e.position || "") + " at " + (e.employer || "") + " (" + (e.startDate || "") + "-" + (e.endDate || "") + ")" + (e.description ? " - " + e.description : ""));
+    });
+  }
+  if (s.publications) parts.push("- Publications:\n" + s.publications);
+  if (s.honours) parts.push("- Honours / awards: " + s.honours);
+  return parts.join("\n");
+}
+
+// LLM picks 3-5 OpenAlex search queries from the full CV
+async function aiPickQueries(s) {
+  var searchType = (s.degree || "").toLowerCase().includes("master") ? "Master's thesis supervisor" : (s.degree || "").toLowerCase().includes("phd") ? "PhD advisor" : "research advisor";
+  const prompt = "You are designing a " + searchType + " search. Given this student's CV, generate 3-5 OpenAlex search queries (each 2-4 words) that capture the research areas where the student would find the best advisor matches. Diversify: cover the student's main interest, methodology, and any niche specialization.\n\nSTUDENT:\n" + studentBlock(s) + "\n\nReturn ONLY a JSON array of strings (the queries). Example: [\"transformer interpretability\", \"alignment evals\", \"circuit analysis\"]";
+  const text = await callAI(prompt, true);
+  try {
+    const arr = JSON.parse(text);
+    if (Array.isArray(arr) && arr.length) return arr.slice(0, 5).map(function(x){ return String(x); });
+  } catch(e) {}
+  return null;
+}
+
+// LLM re-ranks merged OpenAlex candidates against the full CV
+async function aiRerankProfessors(s, profs) {
+  if (!profs.length) return profs;
+  const profList = profs.map(function(p, i){
+    return "[" + (i+1) + "] " + p.name + " - " + p.aff + " - research: " + p.interests + " - " + (p.tags || []).join("; ");
+  }).join("\n");
+  var advisorType = (s.degree || "").toLowerCase().includes("master") ? "Master's thesis supervisors" : (s.degree || "").toLowerCase().includes("phd") ? "PhD advisors" : "research advisors";
+  const prompt = "You are ranking potential " + advisorType + " for this student. For each professor, assign a fit score 0-100 based STRICTLY on research area alignment with the student's field and interests.\n\nScoring rules:\n- 85-100: Direct research overlap (same subfield, same methods)\n- 65-84: Related field with some overlap\n- 40-64: Tangentially related (different subfield but same broad department)\n- 0-39: Different field entirely (e.g. chemistry professor for CS student)\n\nIMPORTANT: If a professor's research area (e.g. chemistry, biology, physics) does NOT match the student's field, score them below 40 regardless of other factors like citation count or university prestige.\n\nSTUDENT:\n" + studentBlock(s) + "\n\nPROFESSORS:\n" + profList + "\n\nReturn ONLY a JSON array, sorted descending by score, like:\n[{\"i\": 3, \"score\": 92, \"reason\": \"...\"}, {\"i\": 1, \"score\": 78, \"reason\": \"...\"}, ...]\nWhere 'i' is the bracketed number from the list. Include all professors. Reason should be one short sentence.";
+  try {
+    const text = await callAI(prompt, true);
+    const arr = JSON.parse(text);
+    if (!Array.isArray(arr)) return profs;
+    const result = [];
+    arr.forEach(function(item){
+      const idx = parseInt(item.i, 10) - 1;
+      if (idx >= 0 && idx < profs.length) {
+        const p = Object.assign({}, profs[idx]);
+        p.score = Math.max(0, Math.min(100, parseInt(item.score, 10) || p.score));
+        p.aiReason = item.reason || "";
+        result.push(p);
+      }
+    });
+    if (result.length) return result;
+  } catch(e) { console.warn("Rerank failed:", e); }
+  return profs;
+}
+
+
+async function aiExplanationFor(p) {
+  const s = studentContext();
+  const cacheKey = "exp:" + p.id + ":" + (s.degree || "").replace(/\s+/g, "").slice(0, 10);
+  const cached = aiCacheGet(cacheKey); if (cached) return cached;
+  var scoreNote = p.score >= 85 ? "This is a STRONG match (score " + p.score + "/100). Explain the specific research overlap enthusiastically." :
+    p.score >= 65 ? "This is a MODERATE match (score " + p.score + "/100). Mention the overlap but also note any gaps honestly." :
+    "This is a WEAK match (score " + p.score + "/100). Be honest about limited overlap — mention any partial connections but do not overstate the fit.";
+  const prompt = "You are a grad-school admissions advisor. Write 2-3 specific sentences explaining why this professor might be relevant for this student. " + scoreNote + " Reference concrete overlap where it exists: a specific paper area, methodology, or topic. Be honest — if the research areas don't align well, say so clearly. Never contradict the score.\n\nSTUDENT PROFILE:\n" + studentBlock(s) + "\n\nPROFESSOR:\n- Name: " + p.name + "\n- Affiliation: " + p.aff + "\n- Research focus: " + p.interests + "\n- Signals: " + (p.tags || []).join(", ") + "\n\nOutput ONLY the 2-3 sentence explanation.";
+  const text = await callAI(prompt);
+  aiCacheSet(cacheKey, text);
+  return text;
+}
+
+async function aiEmailDraftFor(p) {
+  const s = studentContext();
+  const cacheKey = "email:" + p.id + ":" + (s.degree || "").replace(/\s+/g, "").slice(0, 10);
+  const cached = aiCacheGet(cacheKey); if (cached) return cached;
+  var degreeType = (s.degree || "").toLowerCase().includes("master") ? "Master's" : (s.degree || "").toLowerCase().includes("phd") ? "PhD" : "graduate";
+  const prompt = "Write a personalized cold-outreach email body (~150-200 words) from a " + degreeType + " applicant to a professor. The student is applying for: " + (s.degree || "a graduate program") + ". Reference one concrete element of the professor's research and connect it to a specific item from the student's CV (a publication, project, course, or experience). Mention that a CV is attached. Tone: warm, professional, specific not generic.\n\nSTUDENT PROFILE:\n" + studentBlock(s) + "\n\nPROFESSOR:\n- Name: " + p.name + "\n- Affiliation: " + p.aff + "\n- Research focus: " + p.interests + "\n- Signals: " + (p.tags || []).join(", ") + "\n\nOutput ONLY the email body, starting with greeting (Dear Prof./Dr. ...) and ending with 'Best,\\n" + s.name + "'.";
+  const text = await callAI(prompt);
+  aiCacheSet(cacheKey, text);
+  return text;
+}
+
+async function aiAnalyzeResponse(p, responseBody) {
+  const cacheKey = "analysis:" + p.id;
+  const cached = aiCacheGet(cacheKey);
+  if (cached) { try { return JSON.parse(cached); } catch(e) {} }
+  const s = studentContext();
+  const prompt = 'Analyze this professor reply. Output ONLY valid JSON: {"sentiment":"positive|neutral|negative","intent":"description","entities":["items"],"summary":"2 sentences","action":{"title":"verb phrase","desc":"next step","replyDraft":"complete reply or null"}}\n\nPROFESSOR: ' + p.name + ' at ' + p.aff + '\nSTUDENT: ' + s.name + '\n\nREPLY:\n' + responseBody + '\n\nReturn only JSON.';
+  const text = await callAI(prompt, true);
+  const parsed = JSON.parse(text);
+  aiCacheSet(cacheKey, JSON.stringify(parsed));
+  return parsed;
+}
+
+async function updateDrawerWithAI(p, responseBody) {
+  const aiSec = document.getElementById("drawer-ai-section");
+  const actSec = document.getElementById("drawer-action-section");
+  if (!aiSec || !actSec) return;
+  aiSec.innerHTML = '<div class="ai-card"><em style="color:var(--text-muted);">&#10024; Analyzing reply with ' + (AI_CFG.provider === "claude" ? "Claude" : "Gemini") + '...</em></div>';
+  actSec.innerHTML = '<div class="action-card"><em style="color:var(--text-muted);">Generating suggested next step...</em></div>';
+  try {
+    const a = await aiAnalyzeResponse(p, responseBody);
+    const sentClass = a.sentiment === "positive" ? "sent-pos" : a.sentiment === "negative" ? "sent-neg" : "sent-neu";
+    const sentLabel = { positive: "Positive", neutral: "Neutral", negative: "Negative" }[a.sentiment] || "Neutral";
+    const entities = (a.entities && a.entities.length) ? a.entities.map(e => '<span class="entity-tag">' + esc(String(e)) + '</span>').join("") : '<span style="color:var(--text-soft); font-size:12px;">None</span>';
+    aiSec.innerHTML = '<div class="ai-card">' +
+      '<div class="ai-row"><span class="ai-key">Sentiment</span><span><span class="sentiment-pill ' + sentClass + '">' + sentLabel + '</span> <span style="font-size:11px; color:var(--text-soft);">&#10024; by ' + (AI_CFG.provider === "claude" ? "Claude" : "Gemini") + '</span></span></div>' +
+      '<div class="ai-row"><span class="ai-key">Intent</span><span>' + esc(a.intent || "") + '</span></div>' +
+      '<div class="ai-row"><span class="ai-key">Entities</span><span>' + entities + '</span></div>' +
+      '<div class="ai-row"><span class="ai-key">Summary</span><span style="color: var(--text-muted);">' + esc(a.summary || "") + '</span></div></div>';
+    const action = a.action || {};
+    const actionBody = action.replyDraft
+      ? '<div class="reply-draft"><div style="font-size:11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">AI-drafted reply</div>' +
+        '<textarea id="drawer-reply-textarea">' + esc(action.replyDraft) + '</textarea></div>' +
+        '<div class="actions" style="margin-top:12px;"><button class="btn btn-ghost" onclick="regenerateAnalysis(' + p.id + ')">Regenerate</button>' +
+        '<button class="btn btn-primary" onclick="copyReply()">Copy reply</button></div>'
+      : '<div class="actions" style="margin-top:12px;"><button class="btn btn-ghost" onclick="regenerateAnalysis(' + p.id + ')">Regenerate</button></div>';
+    actSec.innerHTML = '<div class="action-card"><div class="action-title">' + esc(action.title || "Suggested action") + '</div>' +
+      '<div class="action-desc">' + esc(action.desc || "") + '</div>' + actionBody + '</div>';
+  } catch (err) {
+    aiSec.innerHTML = '<div class="ai-card" style="background:var(--danger-soft);"><div style="color:var(--danger); font-size:12px;">AI analysis failed: ' + esc(err.message) + '</div></div>';
+  }
+}
+
+async function regenerateAnalysis(profId) {
+  const p = PROFESSORS.find(x => x.id === profId); if (!p) return;
+  const r = RESPONSES[profId]; if (!r || !r.body) { toast("No reply to analyze"); return; }
+  delete AI_CACHE["analysis:" + profId];
+  try { localStorage.removeItem("pm:aicache:analysis:" + profId); } catch(e) {}
+  await updateDrawerWithAI(p, r.body);
+  toast("Re-analyzed");
+}
+
+function archiveProf(id, ev) { if (ev) ev.stopPropagation(); state.archived.add(id); saveUserState(); renderFollowUp(); toast("Archived"); }
+function unarchiveProf(id, ev) { if (ev) ev.stopPropagation(); state.archived.delete(id); saveUserState(); renderFollowUp(); toast("Restored"); }
+
+const DEMO_PROF_STATUS = {
+  1: { stage: "meeting", sentAt: "2d ago", repliedAt: "1d ago", meetingAt: "Tue 3pm" },
+  2: { stage: "replied", sentAt: "2d ago", repliedAt: "5h ago" },
+  3: { stage: "sent",    sentAt: "2d ago" },
+  4: { stage: "sent",    sentAt: "2d ago" },
+  5: { stage: "pending", sentAt: "5d ago", note: "follow-up scheduled" },
+  6: { stage: "dropped", sentAt: "9d ago", note: "no response" }
+};
+let PROF_STATUS = {};
+function loadProfStatus() {
+  var raw = safeGet(userKey("profStatus"));
+  if (raw) { try { PROF_STATUS = JSON.parse(raw); return; } catch(e) {} }
+  PROF_STATUS = {};
+}
+function saveProfStatus() {
+  var json = JSON.stringify(PROF_STATUS);
+  safeSet(userKey("profStatus"), json);
+  kvSave("profStatus", json);
+}
+function getProfStatus(id) {
+  return PROF_STATUS[id] || DEMO_PROF_STATUS[id] || null;
+}
+let SENT_EMAILS = {};
+function loadSentEmails() {
+  var raw = safeGet(userKey("sentEmails"));
+  if (raw) { try { SENT_EMAILS = JSON.parse(raw); return; } catch(e) {} }
+  SENT_EMAILS = {};
+}
+function saveSentEmails() {
+  var json = JSON.stringify(SENT_EMAILS);
+  safeSet(userKey("sentEmails"), json);
+  kvSave("sentEmails", json);
+}
+const STATUS_GROUPS = { "sent": ["sent"], "replied": ["replied"], "meeting": ["meeting"], "pending": ["pending"], "dropped": ["dropped"] };
+const STAGE_BADGES = {
+  sent: { cls: "badge-sent", text: "Sent" },
+  replied: { cls: "badge-replied", text: "Replied" }, meeting: { cls: "badge-meeting", text: "Meeting scheduled" },
+  pending: { cls: "badge-followup", text: "Follow-up due" }, dropped: { cls: "badge-dropped", text: "Dropped" }
+};
+const STAGE_INDEX = { sent: 0, replied: 1, meeting: 3, pending: 2, dropped: -1 };
+
+function renderFollowUp() {
+  var inboxBtn = document.getElementById("btn-check-inbox");
+  if (inboxBtn) inboxBtn.style.display = gmailAccessToken ? "" : "none";
+  let profsAll = PROFESSORS.filter(p => state.approved.has(p.id) || PROF_STATUS[p.id] || SENT_EMAILS[p.id]);
+  if (profsAll.length === 0) profsAll = PROFESSORS.filter(p => state.selected.has(p.id));
+  const activeChip = document.querySelector("#status-filters .chip.active");
+  const status = activeChip ? activeChip.dataset.status : "all";
+  const visiblePool = profsAll;
+  const activePool = profsAll;
+  const total = activePool.length;
+  const replied = activePool.filter(p => { const s = getProfStatus(p.id); return s && (s.stage === "replied" || s.stage === "meeting"); }).length;
+  const sent = activePool.filter(p => { const s = getProfStatus(p.id); return !s || s.stage === "sent"; }).length;
+  document.getElementById("stat-grid").innerHTML =
+    '<div class="stat"><div class="stat-label">Active</div><div class="stat-value">' + total + '</div><div class="stat-delta">in tracker</div></div>' +
+    '<div class="stat"><div class="stat-label">Sent</div><div class="stat-value">' + sent + '</div><div class="stat-delta">awaiting reply</div></div>' +
+    '<div class="stat"><div class="stat-label">Replied</div><div class="stat-value">' + replied + '</div><div class="stat-delta">' + (total ? Math.round(replied/total*100) : 0) + '%</div></div>';
+  // Filter chip counts
+  var groupCounts = { all: activePool.length };
+  Object.keys(STATUS_GROUPS).forEach(function(gName) {
+    groupCounts[gName] = activePool.filter(function(p) {
+      var s = getProfStatus(p.id); var stage = (s && s.stage) || "sent";
+      return STATUS_GROUPS[gName].indexOf(stage) >= 0;
+    }).length;
+  });
+  document.querySelectorAll("#status-filters .chip").forEach(function(chip) {
+    var st = chip.dataset.status;
+    var count = groupCounts[st] != null ? groupCounts[st] : 0;
+    var label = chip.textContent.replace(/\s*\(\d+\)$/, "");
+    chip.textContent = label + " (" + count + ")";
+  });
+  const sIn = document.getElementById("search-input");
+  const q = (sIn ? sIn.value : "").toLowerCase().trim();
+  const filtered = visiblePool.filter(p => {
+    const stage = (getProfStatus(p.id) && getProfStatus(p.id).stage) || "sent";
+    if (status !== "all" && STATUS_GROUPS[status].indexOf(stage) < 0) return false;
+    if (q && (p.name + " " + (p.aff || "")).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+  if (filtered.length === 0) {
+    document.getElementById("timeline").innerHTML = '<div class="empty">No matches.</div>';
+    return;
+  }
+  document.getElementById("timeline").innerHTML = filtered.map(p => {
+    const st = getProfStatus(p.id) || { stage: "sent", sentAt: "just now" };
+    const stage = st.stage;
+    const idx = STAGE_INDEX[stage];
+    const isDropped = stage === "dropped";
+    const badge = STAGE_BADGES[stage] || STAGE_BADGES["sent"];
+    var fmt = function(v) { return (!v || v === "—") ? "—" : (v.indexOf("T") > 0 ? timeAgo(v) : v); };
+    const stages = [
+      { label: "Sent", time: fmt(st.sentAt) },
+      { label: "Replied", time: fmt(st.repliedAt) }, { label: "Follow-up", time: fmt(st.note) },
+      { label: "Meeting", time: fmt(st.meetingAt) }
+    ];
+    const trackHTML = stages.map((s, i) => {
+      let cls = "";
+      if (isDropped && i === 0) cls = "dropped";
+      else if (i < idx) cls = "done";
+      else if (i === idx) cls = "current";
+      return '<div class="timeline-step ' + cls + '"><div class="timeline-dot">' + (cls === "done" || cls === "dropped" ? "" : (i+1)) + '</div><div class="timeline-label">' + s.label + '</div><div class="timeline-time">' + s.time + '</div></div>';
+    }).join("");
+    return '<div class="prof-timeline" data-prof-id="' + p.id + '">' +
+      '<div class="prof-timeline-head">' +
+      '<div class="prof-timeline-meta"><div class="avatar">' + initials(p.name) + '</div>' +
+      '<div><div class="prof-name">' + esc(p.name) + '<span class="prof-timeline-cta">View &rarr;</span></div><div class="prof-aff">' + esc(p.aff || "") + '</div></div></div>' +
+      '<div style="display:flex; align-items:center; gap:8px;"><span class="badge ' + badge.cls + '">' + badge.text + '</span></div></div>' +
+      '<div class="timeline-track">' + trackHTML + '</div></div>';
+  }).join("");
+}
+
+let RESPONSES = {
+  1: { receivedAt: "Yesterday, 4:12 PM",
+       body: "Hi Aisha,\n\nThanks for reaching out. Your work on attention circuits sounds great. I'm recruiting 1-2 PhDs for Fall '26.\n\nCould you do Tuesday next week, 3pm ET on Zoom? Please send your research statement.\n\nBest,\nMaya",
+       sentiment: "positive", intent: "Wants to schedule a meeting",
+       entities: ["Tuesday 3pm ET", "Zoom", "Research statement"],
+       summary: "Strong positive signal — confirmed recruiting and proposed a specific time.",
+       action: { title: "Confirm meeting + send materials", desc: "Reply confirming Tuesday and attach materials.",
+                 replyDraft: "Dear Prof. Chen,\n\nThank you — Tuesday at 3pm works.\n\nBest,\nAisha" } },
+  2: { receivedAt: "5 hours ago",
+       body: "Hi Aisha,\n\nThanks for the note. I'm not actively recruiting this cycle but the lab might have rotation slots in spring.\n\n— James",
+       sentiment: "neutral", intent: "Offering an alternative path",
+       entities: ["Spring rotation"],
+       summary: "Door is open but not for direct admit.",
+       action: { title: "Reply with rotation interest", desc: "Express openness to rotation.",
+                 replyDraft: "Dear Prof. Whitfield,\n\nA rotation would be excellent.\n\nBest,\nAisha" } },
+  3: { receivedAt: null, body: null, sentiment: "pending", intent: "Awaiting reply",
+       entities: [], summary: "Sent 2 days ago — no reply yet.",
+       action: { title: "Wait — auto-follow-up scheduled", desc: "Follow-up in 4 days.", replyDraft: null } },
+  4: { receivedAt: null, body: null, sentiment: "pending", intent: "Awaiting reply",
+       entities: [], summary: "Sent 2 days ago.",
+       action: { title: "Hold for 3 more days", desc: "Then follow up.", replyDraft: null } },
+  5: { receivedAt: null, body: null, sentiment: "pending", intent: "Follow-up due",
+       entities: [], summary: "Sent 5 days ago, no reply.",
+       action: { title: "Send follow-up now", desc: "Auto-drafted nudge.",
+                 replyDraft: "Dear Prof. Reyes,\n\nFloating this back to your inbox.\n\nBest,\nAisha" } },
+  6: { receivedAt: null, body: null, sentiment: "negative", intent: "No response after 2 follow-ups",
+       entities: [], summary: "9 days, no response.",
+       action: { title: "Mark as dropped", desc: "Already closed.", replyDraft: null } }
+};
+
+function openDrawer(profId) {
+  const p = PROFESSORS.find(x => x.id === profId); if (!p) return;
+  const r = RESPONSES[profId] || null;
+  const st = getProfStatus(profId) || {};
+  const sent = SENT_EMAILS[profId] || null;
+  document.getElementById("drawer-avatar").textContent = initials(p.name);
+  document.getElementById("drawer-name").textContent = p.name;
+  document.getElementById("drawer-aff").textContent = p.aff || "";
+  const studentName = europass.fullName || "Aisha";
+
+  // Outbound email section
+  var outboundPreview;
+  if (sent && sent.body) {
+    outboundPreview = (sent.subject ? "Subject: " + sent.subject + "\n\n" : "") + sent.body;
+  } else {
+    outboundPreview = "Subject: Prospective student interested in " + (p.interests || "").split(",")[0].trim() + "\n\nDear " + esc(p.name) + ",\n\nI'm " + studentName + "...\n[full message]";
+  }
+  var sentAtFmt = st.sentAt ? (st.sentAt.indexOf("T") > 0 ? timeAgo(st.sentAt) : st.sentAt) : "—";
+
+  var inbound, aiSection, actionSection;
+  if (r && r.body) {
+    // Has a response (demo or logged)
+    var sentClass = r.sentiment === "positive" ? "sent-pos" : r.sentiment === "negative" ? "sent-neg" : "sent-neu";
+    var sentLabel = { positive: "Positive", neutral: "Neutral", negative: "Negative", pending: "Awaiting reply" }[r.sentiment] || "Neutral";
+    inbound = '<div class="msg-meta">Received ' + esc(r.receivedAt || "—") + '</div><div class="msg-bubble msg-in">' + esc(r.body) + '</div>';
+    var entitiesHtml = (r.entities && r.entities.length) ? r.entities.map(function(e) { return '<span class="entity-tag">' + esc(String(e)) + '</span>'; }).join("") : '<span style="color:var(--text-soft); font-size:12px;">None yet</span>';
+    var actionBody = (r.action && r.action.replyDraft)
+      ? '<div class="reply-draft"><div style="font-size:11px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase;">AI-drafted reply</div>' +
+        '<textarea id="drawer-reply-textarea">' + esc(r.action.replyDraft) + '</textarea></div>' +
+        '<div class="actions" style="margin-top:12px;"><button class="btn btn-ghost" onclick="regenerateAnalysis(' + p.id + ')">Regenerate</button>' +
+        '<button class="btn btn-primary" onclick="copyReply()">Copy reply</button></div>'
+      : '<div class="actions" style="margin-top:12px;"><button class="btn btn-ghost" onclick="regenerateAnalysis(' + p.id + ')">Regenerate</button></div>';
+    aiSection = '<div class="ai-card">' +
+      '<div class="ai-row"><span class="ai-key">Sentiment</span><span><span class="sentiment-pill ' + sentClass + '">' + sentLabel + '</span></span></div>' +
+      '<div class="ai-row"><span class="ai-key">Intent</span><span>' + esc(r.intent || "") + '</span></div>' +
+      '<div class="ai-row"><span class="ai-key">Entities</span><span>' + entitiesHtml + '</span></div>' +
+      '<div class="ai-row"><span class="ai-key">Summary</span><span style="color: var(--text-muted);">' + esc(r.summary || "") + '</span></div></div>';
+    actionSection = '<div class="action-card"><div class="action-title">' + esc((r.action && r.action.title) || "") + '</div>' +
+      '<div class="action-desc">' + esc((r.action && r.action.desc) || "") + '</div>' + actionBody + '</div>';
+  } else {
+    // No response yet (real professors)
+    inbound = '<div class="empty" style="padding: 24px; background: var(--accent-soft); border-radius: var(--radius); border-left: 3px solid var(--accent);">No reply yet.' +
+      '<div style="margin-top:12px;"><button class="btn btn-ghost" onclick="logReply(' + p.id + ')">Log a reply</button></div></div>';
+    aiSection = '<div class="ai-card"><em style="color:var(--text-muted);">AI analysis will appear after a reply is logged.</em></div>';
+    actionSection = '<div class="action-card"><em style="color:var(--text-muted);">Waiting for professor response.</em></div>';
+  }
+
+  document.getElementById("drawer-body").innerHTML =
+    '<div class="drawer-section"><h4>Original outreach</h4>' +
+    '<div class="msg-meta">Sent ' + esc(sentAtFmt) + '</div>' +
+    '<div class="msg-bubble msg-out">' + esc(outboundPreview) + '</div></div>' +
+    '<div class="drawer-section"><h4>Inbound response</h4>' + inbound + '</div>' +
+    '<div class="drawer-section"><h4>AI analysis</h4><div id="drawer-ai-section">' + aiSection + '</div></div>' +
+    '<div class="drawer-section"><h4>Suggested next action</h4><div id="drawer-action-section">' + actionSection + '</div></div>';
+  document.getElementById("drawer").classList.add("show");
+  document.getElementById("drawer-overlay").classList.add("show");
+  if (AI_CFG.apiKey && r && r.body) updateDrawerWithAI(p, r.body);
+}
+
+function logReply(profId) {
+  var text = prompt("Paste the professor's reply text:");
+  if (!text || !text.trim()) return;
+  text = text.trim();
+  var now = new Date().toISOString();
+  RESPONSES[profId] = { receivedAt: now, body: text, sentiment: "pending", intent: "Pending AI analysis",
+    entities: [], summary: "Reply logged — run AI analysis for details.",
+    action: { title: "Analyze reply", desc: "AI will process the response.", replyDraft: null } };
+  PROF_STATUS[profId] = PROF_STATUS[profId] || {};
+  PROF_STATUS[profId].stage = "replied";
+  PROF_STATUS[profId].repliedAt = now;
+  saveProfStatus();
+  openDrawer(profId);
+  renderFollowUp();
+  var p = PROFESSORS.find(function(x) { return x.id === profId; });
+  if (p && AI_CFG.apiKey) updateDrawerWithAI(p, text);
+}
+
+function copyReply() {
+  var ta = document.getElementById("drawer-reply-textarea");
+  if (!ta) { toast("Nothing to copy"); return; }
+  var text = ta.value;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() { toast("Copied to clipboard"); }).catch(function() {
+      ta.select(); document.execCommand("copy"); toast("Copied to clipboard");
+    });
+  } else {
+    ta.select(); document.execCommand("copy"); toast("Copied to clipboard");
+  }
+}
+
+function closeDrawer() {
+  document.getElementById("drawer").classList.remove("show");
+  document.getElementById("drawer-overlay").classList.remove("show");
+}
+
+function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function escapeAttr(s) { return esc(s); }
+function escapeText(s) { return esc(s); }
+function timeAgo(iso) {
+  if (!iso) return "—";
+  var diff = Date.now() - new Date(iso).getTime();
+  if (diff < 0) return "just now";
+  var sec = Math.floor(diff / 1000);
+  if (sec < 60) return "just now";
+  var min = Math.floor(sec / 60);
+  if (min < 60) return min + "m ago";
+  var hr = Math.floor(min / 60);
+  if (hr < 24) return hr + "h ago";
+  var day = Math.floor(hr / 24);
+  if (day < 30) return day + "d ago";
+  return Math.floor(day / 30) + "mo ago";
+}
+function initials(name) { return name.replace(/Dr\.|Prof\./g, "").trim().split(" ").map(s => s[0]).slice(0,2).join(""); }
+function toast(msg) {
+  const t = document.getElementById("toast"); if (!t) return;
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(window._tt);
+  window._tt = setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const zone = document.getElementById("upload-zone");
+  const input = document.getElementById("cv-input");
+  const text = document.getElementById("upload-text");
+  if (zone && input) {
+    zone.addEventListener("click", () => input.click());
+    input.addEventListener("change", () => { const f = input.files[0]; if (f) { zone.classList.add("has-file"); text.textContent = "✓ " + f.name + " uploaded"; } });
+  }
+  // Seed at least one education entry
+  if (document.getElementById("edu-list").children.length === 0) addEduEntry();
+  renderSidebar();
+  loadEmailJSConfig();
+  loadAICfg();
+
+  // Auto-restore Google session
+  (function restoreSession() {
+    var cred = safeGet("pm:google_credential");
+    var exp = parseInt(safeGet("pm:google_exp") || "0", 10);
+    if (cred && exp > Date.now() / 1000) {
+      handleGoogleSignIn({ credential: cred });
+    } else {
+      try { localStorage.removeItem("pm:google_credential"); localStorage.removeItem("pm:google_exp"); } catch(e) {}
+      initGoogleSignIn();
+    }
+  })();
+});
+
+document.addEventListener("click", (e) => {
+  const chip = e.target.closest("#status-filters .chip");
+  if (chip) {
+    document.querySelectorAll("#status-filters .chip").forEach(c => c.classList.remove("active"));
+    chip.classList.add("active");
+    renderFollowUp();
+    return;
+  }
+  const tile = e.target.closest(".prof-timeline");
+  if (tile && tile.dataset.profId && !e.target.closest("button")) openDrawer(parseInt(tile.dataset.profId, 10));
+});
+</script>
+</body>
+</html>
+                  

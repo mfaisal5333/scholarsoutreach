@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProfMatch — AI-Powered Academic Outreach System</title>
+  <meta name="description" content="ProfMatch uses intelligent AI agents to discover professors, score research relevance, and send personalized outreach emails — all with your approval." />
+  <link rel="stylesheet" href="landing.css" />
+</head>
+<body>
+
+  <!-- ============ NAVBAR ============ -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="#hero" class="nav-logo">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="#4f46e5"/>
+          <path d="M16 6C10.48 6 6 10.48 6 16s4.48 10 10 10 10-4.48 10-10S21.52 6 16 6zm0 3a3 3 0 110 6 3 3 0 010-6zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#fff" opacity=".9"/>
+          <circle cx="22" cy="10" r="4" fill="#10b981"/>
+          <path d="M20.5 10h3M22 8.5v3" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+        ProfMatch
+      </a>
+
+      <div class="nav-links" id="nav-links">
+        <a href="#hero" class="active">Home</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#features">Features</a>
+        <a href="#audience">About</a>
+        <a href="#cta">Contact</a>
+      </div>
+
+      <div class="nav-actions" id="nav-actions">
+        <a href="dashboard.html" class="btn btn-outline">Login</a>
+        <a href="dashboard.html" class="btn btn-primary">Register</a>
+      </div>
+
+      <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero" id="hero">
+    <div class="container">
+      <div class="hero-content reveal">
+        <div class="hero-badge">🤖 AI-Powered Academic Outreach</div>
+        <h1>
+          Find the Right Professor.
+          <span>Land Your Research Opportunity.</span>
+        </h1>
+        <p class="hero-sub">
+          ProfMatch uses intelligent AI agents to discover professors, score research relevance, and send personalized outreach emails — all with your approval.
+        </p>
+        <div class="hero-ctas">
+          <a href="dashboard.html" class="btn btn-white btn-lg">Get Started Free</a>
+          <a href="#how-it-works" class="btn btn-ghost btn-lg">See How It Works</a>
+        </div>
+        <div class="hero-trust">
+          <span>✔ No spam</span>
+          <span>✔ Human-approved emails</span>
+          <span>✔ Fully free to use</span>
+        </div>
+      </div>
+
+      <div class="hero-visual reveal">
+        <div class="hero-mockup">
+          <div class="mockup-header">
+            <div class="mockup-dot"></div>
+            <div class="mockup-dot"></div>
+            <div class="mockup-dot"></div>
+            <div class="mockup-bar"></div>
+          </div>
+          <div class="mockup-body">
+            <div class="mockup-card">
+              <div class="mockup-avatar">DS</div>
+              <div class="mockup-info">
+                <div class="mockup-name">Dr. Sarah Chen</div>
+                <div class="mockup-field">NLP &amp; Machine Learning — MIT</div>
+              </div>
+              <div class="mockup-score">97% Match</div>
+            </div>
+            <div class="mockup-card">
+              <div class="mockup-avatar">AK</div>
+              <div class="mockup-info">
+                <div class="mockup-name">Prof. Ahmed Khan</div>
+                <div class="mockup-field">Computer Vision — Stanford</div>
+              </div>
+              <div class="mockup-score">93% Match</div>
+            </div>
+            <div class="mockup-card">
+              <div class="mockup-avatar">MR</div>
+              <div class="mockup-info">
+                <div class="mockup-name">Dr. Maria Rossi</div>
+                <div class="mockup-field">Reinforcement Learning — ETH</div>
+              </div>
+              <div class="mockup-score">89% Match</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ HOW IT WORKS ============ -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>How ProfMatch Works</h2>
+        <p>A fully autonomous agent loop — from your CV to a professor's inbox</p>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card reveal">
+          <div class="step-number">1</div>
+          <span class="step-icon">📋</span>
+          <h3>Upload Your Profile &amp; CV</h3>
+          <p>The system reviews your academic background and suggests improvements.</p>
+        </div>
+        <div class="step-card reveal">
+          <div class="step-number">2</div>
+          <span class="step-icon">🔍</span>
+          <h3>Discover Professors</h3>
+          <p>AI fetches professor data from university sites, Google Scholar, and LinkedIn.</p>
+        </div>
+        <div class="step-card reveal">
+          <div class="step-number">3</div>
+          <span class="step-icon">🧠</span>
+          <h3>Relevance Scoring</h3>
+          <p>NLP-powered matching ranks professors by research alignment with your interests.</p>
+        </div>
+        <div class="step-card reveal">
+          <div class="step-number">4</div>
+          <span class="step-icon">💡</span>
+          <h3>Explainable AI Decisions</h3>
+          <p>Know exactly why each professor was selected with human-readable justifications.</p>
+        </div>
+        <div class="step-card reveal">
+          <div class="step-number">5</div>
+          <span class="step-icon">✉️</span>
+          <h3>Personalized Email Generation</h3>
+          <p>AI drafts a unique email for each professor. You review and approve before it's sent.</p>
+        </div>
+        <div class="step-card reveal">
+          <div class="step-number">6</div>
+          <span class="step-icon">🔔</span>
+          <h3>Smart Follow-Ups</h3>
+          <p>If no reply after 7 days, one polite follow-up is automatically sent and tracked.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES ============ -->
+  <section class="features" id="features">
+    <div class="container">
+      <div class="section-header reveal">
+        <h2>Everything You Need for Academic Outreach</h2>
+        <p>Powerful AI modules working together to simplify your research journey</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">🎓</div>
+          <h3>CV &amp; Profile Optimizer</h3>
+          <p>Get your academic profile ready before outreach with AI-powered suggestions.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🌐</div>
+          <h3>Academic Data Discovery</h3>
+          <p>Automated collection of professor data from public academic sources.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">📊</div>
+          <h3>Relevance Matching</h3>
+          <p>Sentence embeddings and similarity scoring to find your best-fit professors.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🔎</div>
+          <h3>Explainable AI</h3>
+          <p>Transparent AI decisions with justifications you can trust and verify.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">🤝</div>
+          <h3>Human-in-the-Loop</h3>
+          <p>You stay in control. Every email needs your approval before it's sent.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">📈</div>
+          <h3>Outreach Dashboard</h3>
+          <p>Track all emails, follow-ups, and responses in one clean, real-time dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <section class="stats-bar" id="stats">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item reveal">
+          <h3><span class="stat-number" data-target="500" data-suffix="+">0</span></h3>
+          <p>Professors Discovered</p>
+        </div>
+        <div class="stat-item reveal">
+          <h3><span class="stat-number" data-target="95" data-suffix="%">0</span></h3>
+          <p>Relevance Accuracy</p>
+        </div>
+        <div class="stat-item reveal">
+          <h3><span class="stat-number" data-target="7" data-suffix="-Day">0</span></h3>
+          <p>Smart Follow-Up</p>
+        </div>
+        <div class="stat-item reveal">
+          <h3><span class="stat-number" data-target="100" data-suffix="%">0</span></h3>
+          <p>Human-Approved Emails</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ AUDIENCE ============ -->
+  <section class="audience" id="audience">
+    <div class="container">
+      <div class="audience-content reveal">
+        <h2>Built for Ambitious Students</h2>
+        <p>
+          Whether you're applying for an MS, PhD, or research internship, ProfMatch automates the most time-consuming part of academic outreach — while keeping you in full control.
+        </p>
+        <div class="audience-tags">
+          <span class="audience-tag">Undergraduate Students</span>
+          <span class="audience-tag">MS / PhD Applicants</span>
+          <span class="audience-tag">Research Interns</span>
+          <span class="audience-tag">Scholarship Seekers</span>
+        </div>
+      </div>
+      <div class="audience-visual reveal">
+        <div class="audience-illustration">
+          <div class="illust-icon">🎯</div>
+          <div class="illust-bars">
+            <div class="illust-bar"></div>
+            <div class="illust-bar"></div>
+            <div class="illust-bar"></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <span class="audience-tag" style="font-size:0.75rem;padding:6px 12px;">AI Powered</span>
+            <span class="audience-tag" style="font-size:0.75rem;padding:6px 12px;background:#d1fae5;color:#059669;border-color:#6ee7b7;">Smart</span>
+            <span class="audience-tag" style="font-size:0.75rem;padding:6px 12px;background:#d1fae5;color:#059669;border-color:#6ee7b7;">Free</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CTA BANNER ============ -->
+  <section class="cta-banner" id="cta">
+    <div class="container">
+      <h2 class="reveal">Ready to Find Your Research Opportunity?</h2>
+      <p class="reveal">Join ProfMatch and let AI do the hard work — while you stay in control.</p>
+      <a href="dashboard.html" class="btn btn-white btn-lg reveal">Create Your Free Account</a>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer" id="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#hero" class="nav-logo">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="8" fill="#4f46e5"/>
+              <path d="M16 6C10.48 6 6 10.48 6 16s4.48 10 10 10 10-4.48 10-10S21.52 6 16 6zm0 3a3 3 0 110 6 3 3 0 010-6zm0 14c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" fill="#fff" opacity=".9"/>
+              <circle cx="22" cy="10" r="4" fill="#10b981"/>
+              <path d="M20.5 10h3M22 8.5v3" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+            ProfMatch
+          </a>
+          <p>AI-Powered Academic Outreach, Simplified.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Platform</h4>
+          <ul>
+            <li><a href="#hero">Home</a></li>
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="#audience">About</a></li>
+            <li><a href="#cta">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <ul>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="dashboard.html">Register</a></li>
+            <li><a href="dashboard.html">Login</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <ul>
+            <li><span class="contact-line">🎓 University Final Year Project</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <span>© 2026 ProfMatch. All rights reserved.</span>
+        <div class="footer-bottom-links">
+          <a href="#hero">Privacy Policy</a>
+          <a href="#hero">Terms of Use</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="landing.js"></script>
+</body>
+</html>
