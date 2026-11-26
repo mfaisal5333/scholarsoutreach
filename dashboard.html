@@ -359,7 +359,7 @@
     <ul class="steps" id="steps"></ul>
     <div class="user-menu" id="user-menu" style="display:none;">
       <div class="user-pic" id="user-pic">AK</div>
-      <div class="user-info"><div class="user-name" id="user-name">Aisha</div><div class="user-email" id="user-email">a@s.edu</div></div>
+      <div class="user-info"><div class="user-name" id="user-name">Aisha</div><div class="user-email" id="user-email">student@example.com</div></div>
       <button class="signout-btn" onclick="signOut()">Sign out</button>
     </div>
     <button class="signout-btn" onclick="openSettings()" style="margin-top:8px; width:100%;">&#9881; Email settings</button>
@@ -374,7 +374,7 @@
         <p class="card-sub">Required for your CV.</p>
         <div class="row">
           <div class="field"><label>Full name <span class="req">*</span></label><input id="f-name" placeholder="Aisha Khan" /></div>
-          <div class="field"><label>Email <span class="req">*</span></label><input id="f-email" type="email" placeholder="aisha@university.edu" /></div>
+          <div class="field"><label>Email <span class="req">*</span></label><input id="f-email" type="email" placeholder="student@example.com" /></div>
         </div>
         <div class="row-3">
           <div class="field"><label>Date of birth <span class="req">*</span></label><input id="f-dob" type="date" /></div>
@@ -1475,7 +1475,7 @@ async function fetchOpenAlexAuthors(query, countryCodes) {
   // Strategy: look up the topic ID first, then filter authors by topic.
   // This finds researchers who actually publish in the field, not just name matches.
   // Falls back to name search if no matching topic is found.
-  var mailto = "mailto=hello@ecomsol.ai";
+  var mailto = ""; // Optionally configure a maintainer-owned contact parameter.
   var countryFilter = (countryCodes && countryCodes.length) ? ",last_known_institutions.country_code:" + countryCodes.join("|") : "";
   try {
     var topicRes = await fetch("https://api.openalex.org/topics?search=" + encodeURIComponent(query) + "&per-page=1&" + mailto);
@@ -2266,7 +2266,7 @@ function profPreviouslySent(p, log) {
 async function sendAllEmails(selectedIds) {
   const profs = PROFESSORS.filter(p => state.approved.has(p.id) && (!selectedIds || selectedIds.has(String(p.id))));
   const studentName = europass.fullName || "Aisha";
-  const studentEmail = gmailConnectedEmail || europass.email || "a@s.edu";
+  const studentEmail = gmailConnectedEmail || europass.email || "student@example.com";
   const useGmail = !!gmailAccessToken && !!gmailConnectedEmail;
   const useEmailJS = !useGmail && EMAILJS_CFG.publicKey && EMAILJS_CFG.serviceId && EMAILJS_CFG.templateId && window.emailjs;
 
@@ -2435,7 +2435,7 @@ async function callClaude(prompt, jsonMode) {
     // Server proxy
     const res = await fetch("/api/claude", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", "Authorization": "Bearer " + (safeGet("pm:google_credential") || "") },
       body: JSON.stringify({ prompt: userPrompt, model: AI_CFG.model, jsonMode: jsonMode })
     });
     if (res.status === 404 || res.status === 501 || res.status === 502 || res.status === 503) throw new Error("Claude proxy unavailable — configure an API key in AI Settings or deploy to Vercel");
@@ -2912,4 +2912,3 @@ document.addEventListener("click", (e) => {
 </script>
 </body>
 </html>
-                  

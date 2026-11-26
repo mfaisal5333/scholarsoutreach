@@ -2,7 +2,7 @@
 
 EmailJS is the **fallback** email method in ProfMatch. The primary method is Gmail OAuth (send from your own Gmail). Use EmailJS if you don't want to connect Gmail or need a quick alternative.
 
-**Free tier:** 200 emails/month.
+Provider plans and quotas change; check your EmailJS account.
 
 ---
 
@@ -56,8 +56,8 @@ EmailJS is the **fallback** email method in ProfMatch. The primary method is Gma
 ## Safety notes
 
 - **Always start with the test recipient set to your own email.** You don't want to accidentally cold-email a real professor with placeholder text.
-- The mock professor emails in the prototype (e.g., `maya.chen@mit.edu`) are likely fake. Replace with your real curated list before going live.
-- EmailJS free tier limits: 200 emails/month, 50/day. Upgrade if you need more.
+- The mock professor emails in the prototype (e.g., `professor@example.com`) are likely fake. Replace with your real curated list before going live.
+- Check current EmailJS account quotas before sending.
 
 ## Primary method: Gmail OAuth
 

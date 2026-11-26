@@ -1,3 +1,5 @@
+> Historical imported project context, retained for attribution/provenance. It is not current setup guidance or evidence of authorship. See README.md and PROVENANCE.md.
+
 # ProfMatch — Project Context
 
 AI-powered professor outreach platform for grad school applicants. Single-file HTML/CSS/JS app deployed on Vercel with serverless Claude proxy and Upstash Redis for cross-device persistence.

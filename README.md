@@ -1,53 +1,62 @@
-# ProfMatch
+# Scholars Outreach (ProfMatch)
 
-AI-powered professor outreach for grad school applicants.
+An individual BSCS final-year project maintained by Muhammad Faisal, intended to help graduate applicants organize professor outreach.
 
-## Stack
-- Pure single-file HTML/CSS/JS (no build) - `index.html`
-- Vercel serverless functions:
-  - `api/claude.js` — Claude API proxy (keeps key server-side)
-  - `api/store.js` — Upstash Redis store (cross-device data persistence)
-- Gmail OAuth — primary email sending + inbox monitoring for replies
-- EmailJS — fallback email sending (BYO keys)
-- OpenAlex API (free, no key) for professor discovery
-- Claude (default) or Gemini (BYOK) for AI features
+**Release status: preparation only.** No v1.0.0 release or project-wide open-source license is currently authorized. Existing application source and `Logo.jpg` have unresolved provenance/licensing. Do not redistribute these as MIT-licensed material. See [PROVENANCE.md](PROVENANCE.md).
 
-## Deploy to Vercel
+## Features present in the source
 
-1. Push or upload to Vercel (drag this folder onto vercel.com/new, or `npx vercel`)
-2. In Vercel project Settings -> Environment Variables, add:
-   - **`CLAUDE_API_KEY`** — your Anthropic API key (`sk-ant-...`)
-     Get a key at https://console.anthropic.com/settings/keys
-   - **Environments:** Production, Preview, Development
-3. In Vercel Dashboard -> Storage -> Create Upstash Redis Database:
-   - Connect it to this project (prefix: `UPSTASH_REDIS_REST`)
-   - This auto-sets `UPSTASH_REDIS_REST_KV_REST_API_URL` and `UPSTASH_REDIS_REST_KV_REST_API_TOKEN`
-4. Redeploy (Vercel may auto-redeploy when you change env vars; if not, click "Redeploy" in Deployments)
+- Applicant profile, CV preview and PDF export using html2pdf.js.
+- Professor discovery through OpenAlex, with filters and shortlisting.
+- AI-assisted query generation, prompt-based relevance reranking, explanations and email drafts; template fallbacks exist. No dedicated sentence-embedding pipeline or measured accuracy is established.
+- Human recipient approval and selection before sending through Gmail OAuth or configured EmailJS.
+- Outreach logs, reply checks and follow-up tracking while the application is running.
+- Browser local storage; optional Redis sync through the server API.
 
-## How AI calls work
+No user counts, adoption claims, accuracy benchmarks or student outcomes have been verified. This checkout is not the PHP/IONOS version described in historical context.
 
-The browser POSTs prompts to `/api/claude`, which is a Vercel serverless function that holds your `CLAUDE_API_KEY` server-side. The key never reaches the browser, so anyone inspecting the deployed page can't steal it.
+## Structure
 
-If a user opens **AI Settings** and pastes their own Claude or Gemini key, the app uses *their* key directly instead.
+`index.html` is the landing page; `landing.css` and `landing.js` support it. `dashboard.html` contains the application. `config.js` holds a **public** Google OAuth client ID. `api/claude.js` and `api/store.js` are Vercel handlers; `lib/auth.js` validates Google credentials. The historical ZIP is retained for provenance review, not used for deployment.
 
-## How email sending works
+## Requirements and local setup
 
-- **Primary: Gmail OAuth** — user clicks "Connect Gmail" in Step 5, emails send from their own Gmail address. Also enables inbox monitoring for professor replies in Step 6.
-- **Fallback: EmailJS** — third-party service, user configures their own keys in Email Settings. See `EMAILJS_SETUP.md` for details.
+Use Node.js 22 or later and npm. After cloning this repository:
 
-## How cross-device sync works
+```sh
+npm ci
+npm test
+npm run dev
+```
 
-User data (profile, professors, email log, follow-up status) is synced to Upstash Redis via `/api/store`. Authenticated using Google ID token. Data persists for 90 days per key.
+The static preview is at http://localhost:3000; open `/dashboard.html` for the app. Static preview does not implement `/api/*`. Full server functionality needs Vercel's development runtime or a Vercel deployment. Do not publish until the provenance blocker is resolved.
 
-## Local dev
+### Google configuration
 
-Open `index.html` in a browser. The `/api/claude` and `/api/store` endpoints won't work locally without `vercel dev`. For local testing, paste a Claude or Gemini key in AI Settings to use BYOK mode.
+Create your own Google Cloud project, enable Gmail API, configure the OAuth consent screen and test users as appropriate, and create an OAuth **Web application** client. Add your exact local and deployment origins to its authorized JavaScript origins. Replace the placeholder in `config.js` with the public client ID. Set `GOOGLE_CLIENT_ID` on the server to the same value. Never put a client secret in browser files.
 
-## Cost / quota
+Google sign-in is required to enter the dashboard. Connecting Gmail additionally requests sending and read-only inbox permissions. Public availability may require Google verification; this repository does not establish that verification.
 
-- OpenAlex: free, 100K calls/day
-- EmailJS free tier: 200 emails/month, 50/day
-- Claude Haiku 4.5: ~$0.0005 per typical request
-- Gemini 1.5 Flash: free tier 1,500 requests/day per user
-- Upstash Redis: free tier 10K commands/day
-- Gmail API: 250 sends/day per user (Google's limit)
+### Vercel setup (after rights clearance)
+
+Import the repository as an Other/static project, with no frontend build command and the repository root as the output. Keep `api/` and `lib/` in the checkout. Configure server environment variables using `.env.example`:
+
+- `GOOGLE_CLIENT_ID`: matches `config.js`.
+- `CLAUDE_API_KEY`: server-side Anthropic API key.
+- `UPSTASH_REDIS_REST_KV_REST_API_URL` and `UPSTASH_REDIS_REST_KV_REST_API_TOKEN`: Redis REST URL/token. These exact names are read by this project; copy provider values explicitly.
+
+Use `npx vercel dev` for local server testing, with local environment values configured securely. Do not commit credentials. Set provider spending limits and deployment-level abuse controls before exposing the AI endpoint; sign-in is not a usage quota.
+
+Alternatively, AI Settings accepts a personal Claude or Gemini API key for browser calls. This exposes the supplied key to scripts on the page and stores settings locally. Use only trusted devices. Model availability, billing and external API quotas depend on each provider; no fixed free quota is promised here.
+
+See [EMAILJS_SETUP.md](EMAILJS_SETUP.md) for the optional email fallback. Verify recipient addresses manually; OpenAlex discovery does not guarantee email availability. Start with a test recipient and review drafts before sending.
+
+## Data and security
+
+Profiles, drafts, tokens and settings can be stored in browser local storage. AI prompts can include CV details; Gmail integration reads messages to check replies. Optional Redis data expires 90 days after its last save per key. Signing out is not a cloud-data deletion guarantee. Avoid real personal data during development. See [SECURITY.md](SECURITY.md).
+
+## Validation and contributions
+
+`npm test` runs mocked backend authorization, validation, storage isolation, expiry and provider-response tests, plus frontend script parsing. CI runs on Node 22 and 24. These tests do not verify real OAuth, email delivery, paid AI requests, PDF layout or production deployment.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [PROVENANCE.md](PROVENANCE.md). Third-party library license information is in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). No project-wide MIT license has been added.
